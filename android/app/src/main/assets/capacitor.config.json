@@ -1,0 +1,17 @@
+{
+	"appId": "com.hangda.campus",
+	"appName": "航大校园",
+	"webDir": "www",
+	"bundledWebRuntime": false,
+	"android": {
+		"allowMixedContent": true
+	},
+	"plugins": {
+		"CapacitorHttp": {
+			"enabled": true
+		},
+		"CapacitorCookies": {
+			"enabled": true
+		}
+	}
+}

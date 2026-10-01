@@ -1,0 +1,19 @@
+{
+  "name": "cauc-campus-app",
+  "version": "1.0.0",
+  "description": "为中国民航大学在校生打造的第三方开源校园助手（无广告、凭据不出本机）。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "航大校园",
+  "short_name": "航大校园",
+  "description": "中国民航大学校园助手 · 课表/考试/电费/校园网（无广告版）",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b3d91",
+  "theme_color": "#0b3d91",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

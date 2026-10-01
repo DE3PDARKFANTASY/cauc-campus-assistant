@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <color name="brand">#FFFFFF</color>
+    
+    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimaryDark">#FFFFFF</color>
+
+    
+    <color name="cauc_window_bg">#FFFFFF</color>
+
+    
+    <bool name="cauc_light_system_bars">true</bool>
+</resources>

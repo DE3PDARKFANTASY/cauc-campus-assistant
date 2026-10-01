@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        
+        <item name="colorPrimary">@color/colorPrimary</item>
+        
+        <item name="windowSplashScreenBackground">@color/cauc_window_bg</item>
+        <item name="android:windowBackground">@color/cauc_window_bg</item>
+        <item name="colorPrimaryDark">@color/cauc_window_bg</item>
+        <item name="android:statusBarColor">@color/cauc_window_bg</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        <item name="colorPrimaryDark">@color/cauc_window_bg</item>
+        <item name="android:statusBarColor">@color/cauc_window_bg</item>
+        
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:navigationBarColor">@color/cauc_window_bg</item>
+        <item name="android:windowLightNavigationBar">@bool/cauc_light_system_bars</item>
+        
+        <item name="android:windowBackground">@color/cauc_window_bg</item>
+        <item name="android:windowLightStatusBar">@bool/cauc_light_system_bars</item>
+        
+        <item name="windowSplashScreenBackground">@color/cauc_window_bg</item>
+        
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
+
+    
+    <style name="AppTheme.EdgeToEdge" parent="AppTheme.NoActionBar">
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/cauc_window_bg</item>
+        <item name="android:windowLightStatusBar">@bool/cauc_light_system_bars</item>
+        <item name="android:navigationBarColor">@color/cauc_window_bg</item>
+        <item name="android:windowLightNavigationBar">@bool/cauc_light_system_bars</item>
+    </style>
+
+    
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash_bg</item>
+        <item name="colorPrimaryDark">@color/cauc_window_bg</item>
+        <item name="android:statusBarColor">@color/cauc_window_bg</item>
+        <item name="android:windowLightStatusBar">@bool/cauc_light_system_bars</item>
+        <item name="windowSplashScreenBackground">@color/cauc_window_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        
+        <item name="windowSplashScreenIconBackgroundColor">@color/cauc_window_bg</item>
+        <item name="android:windowBackground">@color/cauc_window_bg</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>

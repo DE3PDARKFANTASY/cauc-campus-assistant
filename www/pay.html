@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>正在跳转支付…</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#333;text-align:center;padding:0 24px}</style></head>
+<body><div id="m">正在跳转支付页面…</div>
+<script>
+(function(){
+  /* ★payload 经 localStorage 传递（同源 https://localhost）：
+     之前用 URL hash 传 base64，被 WebView 处理时损坏 → atob 报错 → 跳转失败。 */
+  var raw = null;
+  try { raw = localStorage.getItem("cauc_pay_payload"); } catch (e) {}
+  var m = document.getElementById("m");
+  if (!raw) { m.textContent = "缺少支付参数，请回 App 重新下单"; return; }
+  var cfg;
+  try { cfg = JSON.parse(raw); } catch (e) { m.textContent = "支付参数解析失败"; return; }
+  try { localStorage.removeItem("cauc_pay_payload"); } catch (e) {}
+
+  var url = String(cfg.url || "").trim();   /* 官方 post_url 前带空格，必须 trim */
+  var fields = cfg.fields || {};
+  var names = Object.keys(fields);
+  /* 无字段（如银联网关）→ 直接 GET 跳转 */
+  if (names.length === 0) { location.href = url; return; }
+  try {
+    var f = document.createElement("form");
+    f.action = url; f.method = "POST";
+    names.forEach(function(k){
+      var i = document.createElement("input");
+      i.type = "hidden"; i.name = k; i.value = fields[k];
+      f.appendChild(i);
+    });
+    document.body.appendChild(f);
+    f.submit();
+    m.textContent = "正在跳转…";
+  } catch(e) { m.textContent = "跳转失败：" + e; }
+})();
+</script></body></html>
