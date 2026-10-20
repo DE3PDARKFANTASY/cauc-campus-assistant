@@ -1,4 +1,5 @@
 package com.hangda.campus;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -24,9 +25,13 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import org.json.JSONObject;
+
 public class LoginWebViewActivity extends AppCompatActivity {
+
     public static final String EXTRA_URL = "url";
     public static final String EXTRA_POST_DATA = "postData";
     public static final String EXTRA_TITLE = "title";
@@ -38,9 +43,17 @@ public class LoginWebViewActivity extends AppCompatActivity {
     public static final String EXTRA_AUTO = "auto";
     public static final String EXTRA_BROWSE = "browse";
     public static final String EXTRA_FALLBACK_URL = "fallbackUrl";
+
     public static final String EXTRA_WV_REJECTED = "webvpnRejected";
+
     public static final String EXTRA_MAP_CAMPUS = "mapCampus";
     public static final String EXTRA_WV_LOGIN_BOUNCE = "webvpnLoginBounce";
+
+    public static final String EXTRA_AUTO_EVAL = "autoEval";
+
+    public static final String EXTRA_PAY = "pay";
+    private static final String EVAL_AUTO_JS = "(function(){\nif(window.__evalAutoRunning)return;window.__evalAutoRunning=true;\nvar sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};\nvar pick=function(){\n  var radios=[].slice.call(document.querySelectorAll('.jqradio'));\n  var groups={};\n  radios.forEach(function(r){var k=r.name||('q'+radios.indexOf(r));(groups[k]=groups[k]||[]).push(r);});\n  Object.keys(groups).forEach(function(k){\n    var opts=groups[k];\n    var idx=Math.random()<0.65?1:0;\n    var el=opts[idx]||opts[0];\n    if(el&&el.click){el.click();}\n  });\n};\nvar guard=0;\nvar run=function(){\n  if(guard++>60){alert('\u8bc4\u6559\u81ea\u52a8\u6d41\u7a0b\u7ed3\u675f\uff08\u8d85\u65f6\u4fdd\u62a4\uff09');return;}\n  sleep(3000).then(function(){\n    var tasks=[].slice.call(document.querySelectorAll('button')).filter(function(b){return (b.textContent||'').indexOf('\u6211\u8981\u8bc4\u4ef7')>=0;});\n    if(!tasks.length){\n      var tab=document.querySelector(\"a[status='0']\");\n      if(tab){tab.click();return sleep(2000).then(run);}\n      alert('\u8bc4\u6559\u5b8c\u6210\u6216\u6682\u65e0\u4efb\u52a1');return;\n    }\n    tasks[0].click();\n    return sleep(3000).then(function(){pick();return sleep(600);}).then(function(){\n      var sb=document.getElementById('but_tj');\n      if(sb){sb.click();}\n      return sleep(2000);\n    }).then(function(){\n      var ok=document.querySelector('.layui-layer-btn0,.bootbox-accept,#btn_ok');\n      if(ok){ok.click();}\n      return sleep(2000);\n    }).then(function(){\n      var tab=document.querySelector(\"a[status='0']\");\n      if(tab){tab.click();}\n      run();\n    });\n  });\n};\nrun();\n})();";
+
     private static final String REJECT_JS =
         "(function(){try{var t=document.body?String(document.body.innerText||''):'';" +
         "if(t.length>4000)t=t.slice(0,4000);" +
@@ -48,6 +61,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         "var hit=/仅限[^。]{0,10}校外使用|访问权限提示|不允许登录|无权访问该系统|请通过.{0,10}学校主页/.test(t);" +
         "return (hit&&!hasForm)?'1':'0';" +
         "}catch(e){return '0';}})()";
+
     private WebView webView;
     private TextView titleView;
     private TextView hintView;
@@ -57,15 +71,21 @@ public class LoginWebViewActivity extends AppCompatActivity {
     private boolean webvpnRejected = false;
     private boolean webvpnLoginBounce = false;
     private boolean mapCampus = false;
+    private boolean mapCampusExplicit = false;
+    private boolean autoEval = false;
     private boolean triedBounceClose = false;
+
     private static volatile boolean sMapCampus = false;
     static void setMapCampusGlobal(boolean b) { sMapCampus = b; }
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean closed = false;
     private int ticks = 0;
+
     private LinearLayout topBar;
     private final java.util.ArrayList<ImageView> topIcons = new java.util.ArrayList<ImageView>();
     private View pageRoot;
+
     private final Runnable poll = new Runnable() {
         @Override
         public void run() {
@@ -73,32 +93,90 @@ public class LoginWebViewActivity extends AppCompatActivity {
             ticks++;
             unmaskPasswords();
             if (checkLogin()) return;
-            if (ticks < 400) handler.postDelayed(this, 1000); 
+            if (ticks < 400) handler.postDelayed(this, 1000);
         }
     };
+
     private static final String UNMASK_JS =
             "(function(){try{var a=document.querySelectorAll('input[type=password]');" +
             "for(var i=0;i<a.length;i++){a[i].type='text';" +
             "try{a[i].style.webkitTextSecurity='none';}catch(e){}}}catch(e){}})()";
+
     private static final String WV_CAPTURE_HOOK_JS =
             "(function(){try{if(window.__caucCap)return;window.__caucCap=1;" +
             "function cap(t,s){try{console.log('[WVCap] '+t+' '+String(s).slice(0,420));}catch(e){}}" +
             "var of=window.fetch;" +
-            "if(of){window.fetch=function(u,o){try{cap('FETCH',((o&&o.method)||'GET')+' '+(typeof u==='string'?u:(u&&u.url)));}catch(e){}return of.apply(this,arguments);};}" +
+            "if(of){window.fetch=function(u,o){try{cap('FETCH',((o&&o.method)||'GET')+' '+(typeof u==='string'?u:(u&&u.url)));}catch(e){}return of.apply(window,arguments);};}" +
             "var xo=XMLHttpRequest.prototype.open;" +
             "XMLHttpRequest.prototype.open=function(m,u){try{this.__cm=m;this.__cu=u;cap('XHR',m+' '+u);}catch(e){}return xo.apply(this,arguments);};" +
             "var xs=XMLHttpRequest.prototype.send;" +
             "XMLHttpRequest.prototype.send=function(b){try{cap('XHRS',(this.__cm||'')+' '+(this.__cu||'')+(b?' BODY '+String(b).slice(0,300):''));}catch(e){}return xs.apply(this,arguments);};" +
             "var ow=window.open;" +
-            "if(ow){window.open=function(u){try{cap('OPEN',u);}catch(e){}return ow.apply(this,arguments);};}" +
+            "if(ow){window.open=function(u){try{cap('OPEN',u);}catch(e){}return ow.apply(window,arguments);};}" +
             "var fs=HTMLFormElement.prototype.submit;" +
             "HTMLFormElement.prototype.submit=function(){try{cap('FORMSUBMIT',(this.action||'')+' method='+(this.method||'GET'));}catch(e){}return fs.apply(this,arguments);};" +
             "document.addEventListener('submit',function(ev){try{var f=ev.target;if(f&&f.tagName==='FORM')cap('FORMEV',(f.action||'')+' method='+(f.method||'GET'));}catch(e){}},true);" +
             "document.addEventListener('click',function(ev){try{var a=ev.target.closest?ev.target.closest('a,button,[onclick]'):null;if(a)cap('CLICK',(a.textContent||'').trim().slice(0,24)+' href='+(a.href||a.getAttribute('href')||'')+' onclick='+String(a.getAttribute&&a.getAttribute('onclick')||'').slice(0,280));}catch(e){}},true);" +
             "}catch(e){}})()";
+
     private boolean autoSubmit = false;
     private boolean browseMode = false;
+    private static final int AUTO_SUBMIT_MAX = 8;
     private int autoSubmitTries = 0;
+    private final java.util.Set<String> navNormalized = new java.util.HashSet<String>();
+
+    private boolean payMode = false;
+    private long lastExternalAt = 0L;
+
+    private static boolean isAlipayTarget(String url) {
+        if (url == null) return false;
+        String low = url.trim().toLowerCase();
+        if (low.isEmpty()) return false;
+        if (low.startsWith("alipays:") || low.startsWith("alipayqr:")
+                || low.startsWith("alipay:")) return true;
+        if (low.startsWith("intent:")) return low.contains("alipays") || low.contains("alipay");
+        try {
+            String host = android.net.Uri.parse(low).getHost();
+            if (host == null) return false;
+            host = host.toLowerCase();
+            return host.equals("alipay.com") || host.endsWith(".alipay.com")
+                    || host.equals("alipayobjects.com") || host.endsWith(".alipayobjects.com")
+                    || host.equals("alipay.cn") || host.endsWith(".alipay.cn")
+                    || host.equals("alipay.net") || host.endsWith(".alipay.net");
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private void openExternally(String url, String appName) {
+        try {
+            Intent it;
+            if (url != null && url.toLowerCase().startsWith("intent://")) {
+                it = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                if (it == null) throw new Exception("bad intent uri");
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            } else {
+                it = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            startActivity(it);
+            android.util.Log.i("CaucWV", "交给系统打开(" + appName + "): " + url);
+        } catch (Exception e) {
+            android.util.Log.i("CaucWV", appName + " 交给系统失败: " + e);
+            try {
+                Toast.makeText(this, "没能打开" + appName + "，请确认已装浏览器或客户端",
+                        Toast.LENGTH_LONG).show();
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    private boolean claimExternal() {
+        long now = System.currentTimeMillis();
+        if (now - lastExternalAt < 1500L) return false;
+        lastExternalAt = now;
+        return true;
+    }
+
     private static final String AUTOSUBMIT_JS =
         "(function(){try{" +
         "  function vis(el){try{var r=el.getBoundingClientRect();return r.width>0&&r.height>0;}catch(e){return false;}}" +
@@ -111,20 +189,37 @@ public class LoginWebViewActivity extends AppCompatActivity {
         "      for(var k=0;k<words.length;k++){if(s.indexOf(words[k])>=0)return e;}}return null;}" +
         "  var uEl=bySel(['#form_item_userName','input[name=username]','input[name=userName]','input[name=yhm]','#username','input[name=account]','input[name=loginName]'])" +
         "      ||byKey(['user','account','login','用户名','账号','学号'],true)||document.querySelector('input[type=text]');" +
-        "  var pEl=bySel(['#form_item_password','input[name=password]','input[name=upass]','#password','#pwd'])" +
+        "  var pEl=bySel(['#form_item_password','input[name=password]','input[name=upass]','#mm','input[name=mm]','#password','#pwd'])" +
         "      ||byKey(['pass','pwd','密码'],false)||document.querySelector('input[type=password]');" +
         "  var hasU=!!(uEl&&String(uEl.value||'').length>0);" +
         "  var hasP=!!(pEl&&String(pEl.value||'').length>0);" +
         "  if(!hasU) return 'no-user';" +
-        "  var btns=document.querySelectorAll('button,input[type=submit],a[role=button],[class*=btn],[class*=Button],[class*=login],[class*=Login]');" +
+        "  var btns=[].slice.call(document.querySelectorAll('button,input[type=submit],a[role=button],a,[class*=btn],[class*=Button],[class*=login],[class*=Login]'));" +
+        "  function rank(b){var n=(b.tagName||'').toUpperCase();return n==='BUTTON'?0:(n==='INPUT'?1:(n==='A'?2:3));}" +
+        "  btns.sort(function(x,y){return rank(x)-rank(y);});" +
         "  var re=/^(登录|登入|提交|确定|立即登录|Login|LogIn|SignIn|Signup|Submit|Next|Continue|下一步|继续)$/i;" +
-        "  for(var pass=0;pass<2;pass++){" +
+        "  var re2=/(登录|登入|signin|login|submit|提交|下一步|继续|next|continue)/i;" +
+        "  var bad=/(取消|返回|注册|忘记|重置|退出|切换|注销|cancel|back|regist|forget|reset|logout|signup)/i;" +
+        "  var known=['#btn_dl','#btnLogin','#loginBtn','#login-btn','#submitBtn','#btn_login','.login-btn','.btn-login','.login_btn','.button.green'];" +
+        "  for(var q=0;q<known.length;q++){" +
+        "    var kb=null;try{kb=document.querySelector(known[q]);}catch(e){}" +
+        "    if(kb&&!kb.disabled&&!kb.__autoClicked&&vis(kb)){" +
+        "      kb.__autoClicked=true;" +
+        "      try{kb.click();}catch(e){try{kb.dispatchEvent(new MouseEvent('click',{bubbles:true}));}catch(e2){}}" +
+        "      return 'clicked-known:'+known[q]+':'+txt(kb);" +
+        "    }" +
+        "  }" +
+        "  for(var pass=0;pass<4;pass++){" +
         "    for(var i=0;i<btns.length;i++){" +
         "      var b=btns[i];" +
         "      if(b.disabled||b.__autoClicked) continue;" +
-        "      if(pass===0&&!vis(b)) continue;" +
+        "      if(pass===0&&(rank(b)>1||!vis(b))) continue;" +
+        "      if(pass===1&&rank(b)>1) continue;" +
+        "      if(pass>=2&&!vis(b)) continue;" +
         "      var t=txt(b);" +
-        "      if(re.test(t)){" +
+        "      if(!t) continue;" +
+        "      var want=(pass<3)?re.test(t):(re2.test(t)&&!bad.test(t)&&t.length<=14);" +
+        "      if(want){" +
         "        b.__autoClicked=true;" +
         "        try{b.click();}catch(e){try{b.dispatchEvent(new MouseEvent('click',{bubbles:true}));}catch(e2){}}" +
         "        return 'clicked:'+t;" +
@@ -147,81 +242,100 @@ public class LoginWebViewActivity extends AppCompatActivity {
         "  var bs=[];for(var j=0;j<btns.length&&j<6;j++)bs.push(txt(btns[j])||'<empty>');" +
         "  return 'nobtn|u='+hasU+'|p='+hasP+'|inputs='+insD.join(',')+'|btns='+bs.join(',');" +
         "}catch(e){return 'err:'+e.message;}})()";
+
     private void autoSubmitForm() {
-        if (!autoSubmit || browseMode || webView == null || closed) return;
+
+
+        if (!autoSubmit || webView == null || closed) return;
         if (looksLoggedIn(webView.getUrl())) return;
-        if (autoSubmitTries++ > 20) return;
+        if (autoSubmitTries++ >= AUTO_SUBMIT_MAX) return;
         try {
             webView.evaluateJavascript(AUTOSUBMIT_JS, new ValueCallback<String>() {
                 @Override public void onReceiveValue(String v) {
                     android.util.Log.i("CaucLogin", "[autosubmit] " + v);
+                    if (v != null && v.contains("no-user") && autoSubmitTries > 0) autoSubmitTries--;
                 }
             });
         } catch (Exception ignored) {}
     }
+
     private void unmaskPasswords() {
         if (webView == null) return;
         try {
             webView.evaluateJavascript(UNMASK_JS, null);
         } catch (Exception ignored) {}
     }
+
     private static final int BRAND = 0xFF0B3D91;
+
     private View iconButton(int resId, String desc, int size, View.OnClickListener l) {
         FrameLayout box = new FrameLayout(this);
         box.setLayoutParams(new LinearLayout.LayoutParams(size, size));
         box.setContentDescription(desc);
         box.setOnClickListener(l);
+
         ImageView iv = new ImageView(this);
         iv.setImageResource(resId);
         iv.setColorFilter(ShellBar.isNight(this) ? ShellBar.INK_DARK : ShellBar.INK);
         iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
         iv.setLayoutParams(new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
         box.addView(iv);
-        topIcons.add(iv);   
+        topIcons.add(iv);
         return box;
     }
+
     private int dp(int v) {
         return Math.round(getResources().getDisplayMetrics().density * v);
     }
+
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         final String url = getIntent().getStringExtra(EXTRA_URL);
         String title = getIntent().getStringExtra(EXTRA_TITLE);
         String[] ds = getIntent().getStringArrayExtra(EXTRA_DOMAINS);
         autoSubmit = getIntent().getBooleanExtra(EXTRA_AUTO, false);
         browseMode = getIntent().getBooleanExtra(EXTRA_BROWSE, false);
         mapCampus = getIntent().getBooleanExtra(EXTRA_MAP_CAMPUS, false);
-        if (getIntent().hasExtra(EXTRA_MAP_CAMPUS)) {
-            sMapCampus = mapCampus;
-        }
+        autoEval = getIntent().getBooleanExtra(EXTRA_AUTO_EVAL, false);
+        payMode = getIntent().getBooleanExtra(EXTRA_PAY, false);
+        mapCampusExplicit = getIntent().hasExtra(EXTRA_MAP_CAMPUS);
         if (ds != null) domains = ds;
+
         final boolean dark = ShellBar.isNight(this);
         Immersive.apply(this, dark);
+
         CookieManager cm = CookieManager.getInstance();
         cm.setAcceptCookie(true);
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(dark ? Immersive.DARK_BG : Color.WHITE);
         pageRoot = root;
+
         final int BOX = dp(40);
+
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setBaselineAligned(false);
-        bar.setBackgroundColor(dark ? ShellBar.BAR_BG_DARK : ShellBar.BAR_BG);   
+        bar.setBackgroundColor(dark ? ShellBar.BAR_BG_DARK : ShellBar.BAR_BG);
         topBar = bar;
         try { bar.setElevation(dp(2)); } catch (Throwable ignored) {}
         bar.setMinimumHeight(dp(56));
-        bar.setPadding(dp(16), 0, dp(16), 0);   
+        bar.setPadding(dp(16), 0, dp(16), 0);
+
         bar.setPadding(bar.getPaddingLeft(), 0, bar.getPaddingRight(), bar.getPaddingBottom());
+
         bar.addView(iconButton(R.drawable.ic_close_24, "关闭", BOX, new View.OnClickListener() {
             @Override public void onClick(View v) { finishWith(false); }
         }));
+
         titleView = new TextView(this);
         titleView.setText(title == null ? "登录" : title);
-        titleView.setTextColor(dark ? ShellBar.INK_DARK : ShellBar.INK);   
+        titleView.setTextColor(dark ? ShellBar.INK_DARK : ShellBar.INK);
         titleView.setTextSize(17);
         titleView.setTypeface(android.graphics.Typeface.DEFAULT);
         titleView.setSingleLine(true);
@@ -229,16 +343,20 @@ public class LoginWebViewActivity extends AppCompatActivity {
         titleView.setGravity(Gravity.CENTER_VERTICAL);
         titleView.setIncludeFontPadding(false);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0, BOX, 1f);
-        tlp.leftMargin = dp(10);          
+        tlp.leftMargin = dp(10);
         tlp.rightMargin = dp(10);
         bar.addView(titleView, tlp);
+
         bar.addView(iconButton(R.drawable.ic_refresh_24, "刷新", BOX, new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (webView != null) webView.reload();
             }
         }));
+
+
         root.addView(bar, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
         progressBar.setLayoutParams(new LinearLayout.LayoutParams(
@@ -249,6 +367,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         } catch (Throwable ignored) {}
         progressBar.setVisibility(View.GONE);
         root.addView(progressBar);
+
         hintView = new TextView(this);
         hintView.setText("正在自动登录…");
         hintView.setTextSize(12);
@@ -259,6 +378,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
             root.addView(hintView, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
+
         webView = new WebView(this);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -274,6 +394,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cm.setAcceptThirdPartyCookies(webView, true);
         }
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -284,6 +405,10 @@ public class LoginWebViewActivity extends AppCompatActivity {
                 return handleNav(view, String.valueOf(req.getUrl()));
             }
             private boolean handleNav(WebView view, String url) {
+                if (payMode && isAlipayTarget(url)) {
+                    if (claimExternal()) openExternally(url, "支付宝");
+                    return true;
+                }
                 if (url != null && url.toLowerCase().startsWith("weixin://")) {
                     try {
                         android.content.Intent it = new android.content.Intent(
@@ -300,15 +425,53 @@ public class LoginWebViewActivity extends AppCompatActivity {
                     }
                     return true;
                 }
-                if (!sMapCampus || url == null) return false;
-                String mapped = mapCampusUrl(url);
-                if (mapped == null) return false;
-                android.util.Log.i("CaucWV", "remap: " + url + " -> " + mapped);
-                view.loadUrl(mapped);
-                return true;
+                boolean changed = false;
+                if (url != null) {
+                    String fixed = normalizeUrlPath(url);
+                    if (!fixed.equals(url)) {
+                        android.util.Log.i("CaucWV", "normalize: " + url + " -> " + fixed);
+                        url = fixed;
+                        changed = true;
+                    }
+                }
+                final boolean remap = mapCampusExplicit ? mapCampus : sMapCampus;
+                if (remap && url != null) {
+                    String mapped = mapCampusUrl(url);
+                    if (mapped != null) {
+                        android.util.Log.i("CaucWV", "remap: " + url + " -> " + mapped);
+                        view.loadUrl(mapped);
+                        return true;
+                    }
+                }
+                if (changed) {
+                    view.loadUrl(url);
+                    return true;
+                }
+                return false;
+            }
+
+
+            @Override
+            public void onReceivedHttpError(WebView view, android.webkit.WebResourceRequest req,
+                                            android.webkit.WebResourceResponse resp) {
+                try {
+                    if (req == null || !req.isForMainFrame()) return;
+                    String u = String.valueOf(req.getUrl());
+                    String fixed = normalizeUrlPath(u);
+                    if (!fixed.equals(u) && navNormalized.add(fixed)) {
+                        android.util.Log.i("CaucWV", "HTTP " + (resp == null ? "?" : resp.getStatusCode())
+                                + " 且路径多斜杠 → 用归一化地址重载: " + fixed);
+                        view.loadUrl(fixed);
+                    }
+                } catch (Throwable ignored) {}
             }
             @Override
             public void onPageStarted(WebView v, String url, android.graphics.Bitmap favicon) {
+                if (payMode && isAlipayTarget(url) && claimExternal()) {
+                    openExternally(url, "支付宝");
+                    try { v.stopLoading(); } catch (Throwable ignored) {}
+                    return;
+                }
                 injectFromHub(url);
                 super.onPageStarted(v, url, favicon);
             }
@@ -320,6 +483,9 @@ public class LoginWebViewActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String u) {
                 harvestToHub(u);
+                if (autoEval && u != null && u.contains("result_endingClassList")) {
+                    view.evaluateJavascript(EVAL_AUTO_JS, null);
+                }
                 if (titleView != null && u != null) {
                     String host = u.replaceFirst("^https?://", "").split("/")[0];
                     titleView.setText(host);
@@ -406,8 +572,8 @@ public class LoginWebViewActivity extends AppCompatActivity {
                         });
                     } catch (Exception ignored) {}
                 }
-                unmaskPasswords();   
-                prefill();           
+                unmaskPasswords();
+                prefill();
                 try {
                     view.evaluateJavascript(WV_CAPTURE_HOOK_JS, null);
                 } catch (Exception ignored) {}
@@ -458,13 +624,15 @@ public class LoginWebViewActivity extends AppCompatActivity {
                     progressBar.setVisibility(View.GONE);
                 }
             }
+
             @Override
             public boolean onJsAlert(WebView view, String url, String message,
                                      android.webkit.JsResult result) {
                 android.util.Log.i("CaucJsDlg", "alert: " + message);
                 try { result.confirm(); } catch (Throwable ignored) {}
-                return true;   
+                return true;
             }
+
             @Override
             public boolean onJsConfirm(WebView view, String url, String message,
                                        android.webkit.JsResult result) {
@@ -472,6 +640,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
                 try { result.confirm(); } catch (Throwable ignored) {}
                 return true;
             }
+
             @Override
             public boolean onJsPrompt(WebView view, String url, String message,
                                       String defaultValue,
@@ -485,6 +654,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
                 return true;
             }
         });
+
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(webView,
             new androidx.core.view.OnApplyWindowInsetsListener() {
                 @Override public androidx.core.view.WindowInsetsCompat onApplyWindowInsets(
@@ -497,10 +667,14 @@ public class LoginWebViewActivity extends AppCompatActivity {
                     return insets;
                 }
             });
+
         root.addView(webView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
         setContentView(root);
+
         syncHubToWebViewNow();
+
         String postData = getIntent().getStringExtra(EXTRA_POST_DATA);
         if (url != null) {
             if (postData != null && postData.length() > 0) {
@@ -515,11 +689,12 @@ public class LoginWebViewActivity extends AppCompatActivity {
         }
         handler.postDelayed(poll, 1500);
     }
+
     private static final String PREFILL_JS =
         "(function(u,p){" +
         "  function fire(el){['input','change','keyup','blur'].forEach(function(t){" +
         "    try{el.dispatchEvent(new Event(t,{bubbles:true}));}catch(e){}});}" +
-        "  function setVal(el,v){" +                 
+        "  function setVal(el,v){" +
         "    try{var d=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el),'value');" +
         "      if(d&&d.set){d.set.call(el,v);}else{el.value=v;}}" +
         "    catch(e){try{el.value=v;}catch(e2){}}" +
@@ -534,7 +709,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         "  var uEl=bySel(['#form_item_userName','input[name=username]','input[name=userName]','input[name=yhm]','#username','input[name=account]','input[name=loginName]'])" +
         "      ||byKey(['user','account','login','用户名','账号','学号','工号'],true)" +
         "      ||bySel(['input[type=text]','input[type=tel]']);" +
-        "  var pEl=bySel(['#form_item_password','input[name=password]','input[name=upass]','#password','#pwd'])" +
+        "  var pEl=bySel(['#form_item_password','input[name=password]','input[name=upass]','#mm','input[name=mm]','#password','#pwd'])" +
         "      ||byKey(['pass','pwd','密码'],false)" +
         "      ||bySel(['input[type=password]']);" +
         "  var okU=false,okP=false;" +
@@ -542,6 +717,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         "  if(pEl&&p&&pEl!==uEl&&!pEl.value){setVal(pEl,p);okP=true;}" +
         "  return (okU||okP)?'filled':((uEl||pEl)?'already':'notfound');" +
         "})(%s,%s)";
+
     private void prefill() {
         final String u = getIntent().getStringExtra(EXTRA_USER);
         final String pw = getIntent().getStringExtra(EXTRA_PWD);
@@ -576,6 +752,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         };
         handler.postDelayed(r, 300);
     }
+
     private boolean looksLoggedIn(String u) {
         if (u == null) return false;
         String low = u.toLowerCase();
@@ -594,6 +771,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         }
         return false;
     }
+
     private boolean hasCookie() {
         CookieManager cm = CookieManager.getInstance();
         for (String d : domains) {
@@ -606,26 +784,67 @@ public class LoginWebViewActivity extends AppCompatActivity {
         }
         return false;
     }
+
+    private static String normalizeUrlPath(String u) {
+        if (u == null) return null;
+        try {
+            String s = u.trim();
+            int i = s.indexOf("://");
+            int authStart = (i < 0) ? 0 : i + 3;
+            int pathStart = s.indexOf('/', authStart);
+            if (pathStart < 0) return s;
+            int end = s.length();
+            int q = s.indexOf('?', pathStart); if (q >= 0) end = Math.min(end, q);
+            int h = s.indexOf('#', pathStart); if (h >= 0) end = Math.min(end, h);
+            String head = s.substring(0, pathStart);
+            String path = s.substring(pathStart, end).replaceAll("/{2,}", "/");
+            return head + path + s.substring(end);
+        } catch (Throwable t) {
+            return u;
+        }
+    }
+
     private static String mapCampusUrl(String url) {
         try {
             java.net.URI uri = java.net.URI.create(url);
             String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase();
             if (!scheme.equals("http") && !scheme.equals("https")) return null;
             String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
-            if (!host.endsWith(".cauc.edu.cn")) return null;      
             if (host.endsWith(".webvpn.cauc.edu.cn")
-                    || host.equals("webvpn.cauc.edu.cn")) return null;  
+                    || host.equals("webvpn.cauc.edu.cn")) return null;
+            if (!host.endsWith(".cauc.edu.cn") && !isIntranetHost(host)) return null;
             int port = uri.getPort();
             if (port <= 0) port = scheme.equals("https") ? 443 : 80;
-            String mappedHost = scheme + "-" + host.replace(".", "-") + "-" + port
+            String mappedHost = scheme + "-" + host.replace("-", "--").replace(".", "-") + "-" + port
                     + ".webvpn.cauc.edu.cn";
             String path = uri.getRawPath() == null ? "/" : uri.getRawPath();
+            path = path.replaceAll("/{2,}", "/");
             String query = uri.getRawQuery();
             return "https://" + mappedHost + path + (query == null ? "" : "?" + query);
         } catch (Throwable t) {
             return null;
         }
     }
+
+    private static boolean isIntranetHost(String h) {
+        if (h == null || h.isEmpty() || h.indexOf(':') >= 0) return false;
+        try {
+            String[] p = h.split("\\.");
+            if (p.length != 4) return false;
+            int[] v = new int[4];
+            for (int i = 0; i < 4; i++) {
+                v[i] = Integer.parseInt(p[i]);
+                if (v[i] < 0 || v[i] > 255) return false;
+            }
+            if (v[0] == 10) return true;
+            if (v[0] == 192 && v[1] == 168) return true;
+            if (v[0] == 172 && v[1] >= 16 && v[1] <= 31) return true;
+            return false;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private static void harvestToHub(String url) {
         try {
             if (url == null) return;
@@ -643,11 +862,12 @@ public class LoginWebViewActivity extends AppCompatActivity {
                 ck.value = pair.substring(eq + 1);
                 ck.domain = hl;
                 ck.path = "/";
-                ck.expires = -1;   
+                ck.expires = -1;
                 CookieHub.put(ck);
             }
         } catch (Throwable ignored) {}
     }
+
     private static void syncHubToWebViewNow() {
         try {
             org.json.JSONArray arr = CookieHub.dump(null);
@@ -670,6 +890,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
             cm.flush();
         } catch (Throwable ignored) {}
     }
+
     private static void injectFromHub(String url) {
         try {
             if (url == null) return;
@@ -687,10 +908,15 @@ public class LoginWebViewActivity extends AppCompatActivity {
                 String n = pair.substring(0, eq).trim();
                 String val = pair.substring(eq + 1);
                 if (n.isEmpty()) continue;
-                cm.setCookie("https://" + hl + "/", n + "=" + val + "; Path=/; Domain=" + hl);
+                if ("webvpn-token".equals(n)) {
+                    cm.setCookie("https://cauc.edu.cn/", n + "=" + val + "; Path=/; Domain=cauc.edu.cn");
+                } else {
+                    cm.setCookie("https://" + hl + "/", n + "=" + val + "; Path=/; Domain=" + hl);
+                }
             }
         } catch (Throwable ignored) {}
     }
+
     private boolean checkLogin() {
         if (closed) return true;
         if (browseMode) return false;
@@ -708,44 +934,72 @@ public class LoginWebViewActivity extends AppCompatActivity {
         }
         return false;
     }
-    private void finishWith(boolean ok) {
+
+    private void finishWith(final boolean ok) {
         if (closed) return;
         closed = true;
         try { handler.removeCallbacksAndMessages(null); } catch (Exception ignored) {}
-        JSONObject cookies = new JSONObject();
-        try {
-            CookieManager cm = CookieManager.getInstance();
-            cm.flush();
-            java.util.List<String> all = new java.util.ArrayList<String>();
-            for (String d : domains) if (d != null && d.length() > 0) all.add(d);
-            try {
-                String cur = webView == null ? null : webView.getUrl();
-                if (cur != null) {
-                    String h = cur.replaceFirst("^https?://", "").split("/")[0];
-                    int colon = h.indexOf(':');
-                    if (colon > 0) h = h.substring(0, colon);
-                    if (h.length() > 0 && !all.contains(h)) all.add(h);
-                }
-            } catch (Exception ignored) {}
-            for (String d : all) {
-                String c = null;
-                try { c = cm.getCookie("https://" + d + "/"); } catch (Exception ignored) {}
-                if (c == null || c.length() == 0) {
-                    try { c = cm.getCookie("http://" + d + "/"); } catch (Exception ignored) {}
-                }
-                cookies.put(d, c == null ? "" : c);
-                if (c != null && c.length() > 0) CookieVault.save(this, d, c);
+
+
+        final android.content.Context appCtx = getApplicationContext();
+        final String finalUrl = webView == null ? "" : String.valueOf(webView.getUrl());
+        final boolean rejected = webvpnRejected;
+        final boolean bounce = webvpnLoginBounce;
+        final java.util.List<String> doms = new java.util.ArrayList<String>();
+        if (domains != null) for (String d : domains) if (d != null && d.length() > 0) doms.add(d);
+
+        new Thread(new Runnable() {
+            @Override public void run() {
+                JSONObject cookies = new JSONObject();
+                try {
+                    CookieManager cm = CookieManager.getInstance();
+                    cm.flush();
+
+                    java.util.List<String> all = new java.util.ArrayList<String>(doms);
+                    try {
+                        if (finalUrl != null && finalUrl.length() > 0) {
+                            String h = finalUrl.replaceFirst("^https?://", "").split("/")[0];
+                            int colon = h.indexOf(':');
+                            if (colon > 0) h = h.substring(0, colon);
+                            if (h.length() > 0 && !all.contains(h)) all.add(h);
+                        }
+                    } catch (Exception ignored) {}
+
+                    for (String d : all) {
+                        String c = null;
+                        try { c = cm.getCookie("https://" + d + "/"); } catch (Exception ignored) {}
+                        if (c == null || c.length() == 0) {
+                            try { c = cm.getCookie("http://" + d + "/"); } catch (Exception ignored) {}
+                        }
+                        cookies.put(d, c == null ? "" : c);
+                        if (c != null && c.length() > 0) CookieVault.save(appCtx, d, c);
+                    }
+                    if (ok) CookieVault.restore(appCtx);
+                } catch (Exception ignored) {}
+
+                final String payload = cookies.toString();
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        deliverResult(ok, payload, finalUrl, rejected, bounce);
+                    }
+                });
             }
-            if (ok) CookieVault.restore(this);
-        } catch (Exception ignored) {}
-        Intent data = new Intent();
-        data.putExtra(EXTRA_COOKIES, cookies.toString());
-        data.putExtra(EXTRA_FINAL_URL, webView == null ? "" : String.valueOf(webView.getUrl()));
-        data.putExtra(EXTRA_WV_REJECTED, webvpnRejected);
-        data.putExtra(EXTRA_WV_LOGIN_BOUNCE, webvpnLoginBounce);
-        setResult(ok ? Activity.RESULT_OK : Activity.RESULT_CANCELED, data);
-        finish();
+        }, "cookie-harvest").start();
     }
+
+    private void deliverResult(boolean ok, String cookiesJson, String finalUrl,
+                               boolean rejected, boolean bounce) {
+        try {
+            Intent data = new Intent();
+            data.putExtra(EXTRA_COOKIES, cookiesJson);
+            data.putExtra(EXTRA_FINAL_URL, finalUrl);
+            data.putExtra(EXTRA_WV_REJECTED, rejected);
+            data.putExtra(EXTRA_WV_LOGIN_BOUNCE, bounce);
+            setResult(ok ? Activity.RESULT_OK : Activity.RESULT_CANCELED, data);
+        } catch (Throwable ignored) {}
+        try { finish(); } catch (Throwable ignored) {}
+    }
+
     @Override
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
@@ -754,6 +1008,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
             finishWith(false);
         }
     }
+
     private void applyBarTheme(boolean dark) {
         try { if (topBar != null) topBar.setBackgroundColor(dark ? ShellBar.BAR_BG_DARK : ShellBar.BAR_BG); }
         catch (Throwable ignored) {}
@@ -766,6 +1021,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         try { if (pageRoot != null) pageRoot.setBackgroundColor(dark ? Immersive.DARK_BG : Color.WHITE); }
         catch (Throwable ignored) {}
     }
+
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -774,6 +1030,7 @@ public class LoginWebViewActivity extends AppCompatActivity {
         try { Immersive.apply(this, dark); } catch (Throwable ignored) {}
         applyBarTheme(dark);
     }
+
     @Override
     protected void onDestroy() {
         closed = true;
@@ -781,6 +1038,11 @@ public class LoginWebViewActivity extends AppCompatActivity {
         if (webView != null) {
             try {
                 webView.stopLoading();
+                try {
+                    android.view.ViewParent p = webView.getParent();
+                    if (p instanceof android.view.ViewGroup) ((android.view.ViewGroup) p).removeView(webView);
+                } catch (Throwable ignored) {}
+                webView.removeAllViews();
                 webView.destroy();
             } catch (Exception ignored) {}
         }

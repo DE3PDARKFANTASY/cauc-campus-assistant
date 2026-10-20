@@ -1,8 +1,10 @@
 (function () {
   'use strict';
+
   var API = window.CampusAPI;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
   var I = {
     home: '<svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>',
     grid: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -18,6 +20,7 @@
     switchbox: '<svg viewBox="0 0 24 24"><rect x="3.2" y="11.6" width="17.6" height="7.2" rx="2.2"/><circle cx="7.4" cy="15.2" r="0.95" fill="currentColor" stroke="none"/><circle cx="11" cy="15.2" r="0.95" fill="currentColor" stroke="none"/><path d="M17.4 11.6V4.2M17.4 4.2 15.2 6.4M17.4 4.2l2.2 2.2"/></svg>',
     exam: '<svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>',
     bolt: '<svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>',
+    ac: '<svg viewBox="0 0 24 24"><path d="M3 8.5h11a3 3 0 1 0-3-3"/><path d="M3 14h14a3 3 0 1 1-3 3"/><path d="M3 19.5h7.5"/></svg>',
     wifi: '<svg viewBox="0 0 24 24"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M5.5 12a10.5 10.5 0 0 1 13 0"/><path d="M8.5 15.4a6 6 0 0 1 7 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg>',
     card: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19"/><path d="M6 14.5h4"/></svg>',
     cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
@@ -34,6 +37,7 @@
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
     logout: '<svg viewBox="0 0 24 24"><path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H15"/><path d="M10 8l-4 4 4 4M6 12h9"/></svg>'
   };
+
   var MODULES = [
     { k: 'schedule', t: '我的课表', ic: I.schedule, c: 'bg-blue' },
     { k: 'exams', t: '考试安排', ic: I.exam, c: 'bg-red' },
@@ -45,11 +49,13 @@
     { k: 'gpa', t: '绩点学业', ic: I.award, c: 'bg-violet' }
   ];
   function moduleOf(k) { for (var i = 0; i < MODULES.length; i++) if (MODULES[i].k === k) return MODULES[i]; return null; }
+
   var TITLES = {
     exams: '考试安排', electricity: '宿舍电费', network: '校园网信息',
     card: '校园卡', rooms: '空教室查询', calendar: '校历', gpa: '绩点与学业',
-    jwgl: '教务系统', net: '校园网'
+    jwgl: '教务系统', net: '校园网', eval: '期末评教'
   };
+
   var S = {
     route: 'home',
     tab: 'home',
@@ -59,6 +65,7 @@
              lh: '', lhnh: '', cdlb: '', cdmc: '', qszws: '', jszws: '',
              result: null, err: '', loading: false }
   };
+
   var toastTimer;
   function toast(msg) {
     var t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -74,8 +81,18 @@
   function empty(ico, text) { return '<div class="empty-state"><div class="es-ico">' + ico + '</div>' + text + '</div>'; }
   function fmtDate(d) { return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
   function weekdayName(n) { return ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][n - 1]; }
-  
-  
+  function weeksText(weeks) {
+    weeks = (weeks || []).slice().sort(function (a, b) { return a - b; });
+    if (!weeks.length) return '—';
+    var parts = [], s = weeks[0], p = weeks[0];
+    for (var i = 1; i <= weeks.length; i++) {
+      if (i < weeks.length && weeks[i] === p + 1) { p = weeks[i]; continue; }
+      parts.push(s === p ? String(s) : (s + '-' + p));
+      if (i < weeks.length) { s = p = weeks[i]; }
+    }
+    return (parts.length === 1 && parts[0].indexOf('-') < 0) ? ('第 ' + parts[0] + ' 周') : (parts.join(',') + ' 周');
+  }
+
   function soft(fn) {
     try { return Promise.resolve(fn()).catch(function () { return null; }); }
     catch (e) { return Promise.resolve(null); }
@@ -113,7 +130,8 @@
       '</div>' +
     '</div>';
   }
-  
+
+
   function channelSheet() {
     var cur = API.CONFIG.CHANNEL;
     var opts = [
@@ -126,12 +144,12 @@
       (API.canBypassCors() ? ' · 具备 Native HTTP' : ' · 浏览器环境（受 CORS 限制）') + '</div>' +
       opts.map(function (o) {
         return '<div class="list-item" data-act="setchannel:' + o.k + '">' +
-          '<div class="li-ico ' + (cur === o.k ? 'bg-blue' : 'bg-cyan') + '">' +
-            (o.k === 'network' ? I.switchbox : I.wifi) + '</div>' +
+          '<div class="li-ico ' + (cur === o.k ? 'bg-blue' : 'bg-cyan') + '">' + I.link + '</div>' +
           '<div class="li-main"><div class="li-t">' + o.t + (cur === o.k ? ' ✓' : '') + '</div><div class="li-s">' + o.s + '</div></div>' +
           (cur === o.k ? '' : '<span class="chev">' + I.chevron + '</span>') + '</div>';
       }).join('');
   }
+
   function loginModeSheet() {
     var mode = API.getLoginMode();
     var opts = [
@@ -145,20 +163,23 @@
         return '<div class="list-item" data-act="loginmode:' + o.k + '">' +
           '<div class="li-ico ' + (mode === o.k ? 'bg-blue' : 'bg-indigo') + '">' + I.lock + '</div>' +
           '<div class="li-main"><div class="li-t">' + o.t + (mode === o.k ? ' ✓' : '') + '</div><div class="li-s">' + o.s + '</div></div>' +
-          '</div>';
+          (mode === o.k ? '' : '<span class="chev">' + I.chevron + '</span>') +
+        '</div>';
       }).join('');
   }
-  
+
   var token = function () { return localStorage.getItem('cauc_token'); };
   function savedSid() { return localStorage.getItem('cauc_sid') || ''; }
+
   function renderLogin() {
     var mode = API.getLoginMode();
     var fallback = API.isFallback();
     var eff = API.effectiveLoginMode();
     var fails = API.getLoginFails();
     var hasSolver = API.hasSolver();
-    
+
     var seg = '';
+
     var body;
     if (false) {
       if (API.hasNativeLogin()) {
@@ -214,6 +235,7 @@
         '<div class="login-note">登录后：校内自动一键认证校园网；校外自动切 WebVPN。账密只在本机保存，之后<b>不再重复询问</b>。</div>' +
         (token() ? '<div class="login-note" style="color:var(--warning,#b26a00)">为了校外自动登录，请再输入一次密码（只需这一次）。</div>' : '');
     }
+
     $('#app').innerHTML =
       '<div class="login-wrap">' +
         '<div class="login-head">' +
@@ -225,16 +247,15 @@
           '<button class="btn-ghost" id="btn-demo">先看看演示（免登录）</button>' +
         '</div>' +
       '</div>';
+
     var b = $('#btn-login'); if (b) b.onclick = doLogin;
     $('#btn-demo').onclick = function () {
       API.setMode('mock');
       localStorage.setItem('cauc_mode', 'mock');
       localStorage.setItem('cauc_token', 'demo-token');
-      
       localStorage.setItem('cauc_sid', '23010086');
       enterApp();
     };
-    
     var sEl = $('#in-sid');
     if (sEl) sEl.addEventListener('input', function () {
       var v = sEl.value.replace(/\D/g, '');
@@ -242,11 +263,13 @@
     });
     var p = $('#in-pwd'); if (p) p.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
   }
+
   function doLogin() {
     var sid = $('#in-sid').value.trim();
     var pwd = $('#in-pwd').value;
     var btn = $('#btn-login');
     if (!sid || !pwd) { toast('请输入学号与统一身份认证密码'); return; }
+
     btn.disabled = true; btn.textContent = '登录中…';
     API.login(sid, pwd).then(function (res) {
       localStorage.setItem('cauc_token', res.token);
@@ -269,37 +292,31 @@
       }
     });
   }
-  
+
   function enterApp() {
     $('#app').classList.remove('hidden');
     S.week = API.currentWeek();
     S.route = 'home'; S.tab = 'home';
-    
     NAV.stack = ['home'];
     HOME.todayCount = null; HOME.elec = null; HOME.elecUnit = null; HOME._elecAt = 0;
-    
     if (!API.isMock()) {
-      
       (API.probeAndApply ? API.probeAndApply(true) : API.detect()).then(function () {
         var el = document.getElementById('h-status');
         if (el) el.innerHTML = homeStatusBar();
       }).catch(function () {});
-      
       setTimeout(function () {
         if (API.wvVerifyNow) API.wvVerifyNow().catch(function () {});
       }, 0);
-      
       setTimeout(function () {
         if (API.warmup) API.warmup().catch(function () {});
       }, 300);
     }
     renderShell();
   }
+
   function renderShell() {
     var isSub = ['home', 'schedule', 'services', 'mine'].indexOf(S.route) < 0;
     var title = isSub ? (TITLES[S.route] || '详情') : ({ home: '航大校园', schedule: '我的课表', services: '校园服务', mine: '个人中心' })[S.route];
-    
-    
     syncShellBar(title, isSub, '');
     $('#app').innerHTML =
       '<div class="content" id="content"></div>' +
@@ -310,7 +327,7 @@
         '</div>');
     renderContent();
   }
-  
+
   function syncShellBar(title, showBack, right) {
     try {
       var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
@@ -319,7 +336,7 @@
       }
     } catch (e) {}
   }
-  
+
   window.__caucNativeAct = function (act) {
     try {
       var d = document.createElement('button');
@@ -331,7 +348,7 @@
     } catch (e) {}
   };
   function tabBtn(k, ic, label) { return '<button class="tab' + (S.tab === k ? ' active' : '') + '" data-act="tab:' + k + '">' + ic + '<span>' + label + '</span></button>'; }
-  
+
   var NAV = { stack: ['home'] };
   function pushNav(route) {
     if (NAV.stack[NAV.stack.length - 1] !== route) NAV.stack.push(route);
@@ -346,6 +363,7 @@
     var c = $('#content'); if (c) c.style.animation = 'none';
     renderShell(); window.scrollTo(0, 0);
   }
+
   function renderContent() {
     var c = $('#content'); if (!c) return;
     c.innerHTML = loading();
@@ -353,7 +371,7 @@
       home: viewHome, schedule: viewSchedule, services: viewServices, mine: viewMine,
       exams: viewExams, electricity: viewElectricity, network: viewNetwork,
       card: viewCard, rooms: viewRooms, calendar: viewCalendar, gpa: viewGpa,
-      jwgl: viewJwgl, net: viewNet
+      jwgl: viewJwgl, net: viewNet, eval: viewEval
     };
     try {
       (map[S.route] || viewHome)(c);
@@ -361,11 +379,10 @@
       c.innerHTML = failCard(e);
     }
   }
-  
-  
-  
+
+
   var HOME = { todayCount: null, elec: null, _elecAt: 0 };
-  
+
   function quickConf() {
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem('cauc_home_quick') || 'null'); } catch (e) {}
@@ -373,20 +390,20 @@
     if (Array.isArray(saved)) {
       saved.forEach(function (it) {
         if (!it || !it.k) return;
-        for (var j = 0; j < list.length; j++) if (list[j].k === it.k) return;   
+        for (var j = 0; j < list.length; j++) if (list[j].k === it.k) return;
         if (moduleOf(it.k)) list.push({ k: it.k, on: it.on !== false });
       });
     }
     MODULES.forEach(function (m) {
       for (var i = 0; i < list.length; i++) if (list[i].k === m.k) return;
-      list.push({ k: m.k, on: true });    
+      list.push({ k: m.k, on: true });
     });
     return list;
   }
   function quickSave(list) {
     try { localStorage.setItem('cauc_home_quick', JSON.stringify(list)); } catch (e) {}
   }
-  
+
   var HOME_CARD_DEFS = [
     { k: 'status', t: '系统状态' },
     { k: 'hero',   t: '周次统计' },
@@ -395,7 +412,6 @@
     { k: 'course', t: '今日课程' },
     { k: 'exam',   t: '近期考试' }
   ];
-  
   function homeCardConf() {
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem('cauc_home_cards') || 'null'); } catch (e) {}
@@ -403,7 +419,7 @@
     if (Array.isArray(saved)) {
       saved.forEach(function (it) {
         if (!it || !it.k) return;
-        for (var j = 0; j < list.length; j++) if (list[j].k === it.k) return;   
+        for (var j = 0; j < list.length; j++) if (list[j].k === it.k) return;
         for (var i = 0; i < HOME_CARD_DEFS.length; i++) {
           if (HOME_CARD_DEFS[i].k === it.k) { list.push({ k: it.k, on: it.on !== false }); return; }
         }
@@ -418,7 +434,7 @@
   function homeCardSave(list) {
     try { localStorage.setItem('cauc_home_cards', JSON.stringify(list)); } catch (e) {}
   }
-  
+
   function homeQuickCard() {
     var items = quickConf().filter(function (x) { return x.on; })
                            .map(function (x) { return moduleOf(x.k); })
@@ -432,11 +448,9 @@
       : '<div class="today-empty"><div class="big">🧩</div>服务入口都隐藏了，点右上「编辑」恢复</div>';
     return '<div class="card"><div class="section-title">常用服务 <span class="more" data-act="homecards">编辑 ›</span></div>' + grid + '</div>';
   }
-  
   var ELEC_METER = '照明';
-  
   var ELEC_PAYTYPE = '1';
-  
+
   function fillBlock(id, promise, render, errRender) {
     Promise.resolve(promise).then(function (r) {
       var el = document.getElementById(id);
@@ -449,7 +463,7 @@
       el.innerHTML = errRender ? errRender(e) : blockErr(e);
     });
   }
-  
+
   function blockErr(e) {
     var msg = (e && e.message) ? e.message : String(e);
     var short = msg.length > 70 ? msg.slice(0, 70) + '…' : msg;
@@ -461,10 +475,9 @@
       '</div>' +
     '</div>';
   }
-  
+
   function heroHtml(stu, today) {
     stu = stu || {};
-    
     return '<div class="hero">' +
       '<div class="h-stats">' +
         '<div class="h-stat"><div class="n">第 ' + S.week + ' 周</div><div class="l">' + esc(API.CONFIG.SEMESTER) + '</div></div>' +
@@ -473,14 +486,14 @@
       '</div>' +
     '</div>';
   }
-  
+
   function paintHeroStats() {
     var a = document.getElementById('h-stat-course');
     if (a) a.textContent = (HOME.todayCount == null) ? '—' : (HOME.todayCount + ' 节');
     var b = document.getElementById('h-stat-elec');
     if (b) b.textContent = (HOME.elec == null) ? '—' : (num(HOME.elec, 1) + ' ' + (HOME.elecUnit || '度'));
   }
-  
+
   function homeStatusBar() {
     var mock = API.isMock();
     var probe = (API.probeLabel ? API.probeLabel() : '尚未探测');
@@ -489,14 +502,10 @@
     var color = mock ? '#b26a00' : (ok ? '#1a7f37' : '#96241d');
     var bg = mock ? '#fff8e6' : (ok ? '#eaf7ee' : '#fdeceb');
     var bd = mock ? '#f3d99b' : (ok ? '#b7e0c3' : '#f6c3bf');
-    
     var probeShort = esc(probe).replace(/^教务系统：/, '').replace(/，通道就绪$/, '');
-    
     var oneLine = mock
       ? '演示数据（点「我的 → 数据源」切回真实）'
       : '<b>学校真实系统</b> · ' + probeShort;
-    
-    
     return '<div class="banner" data-sig="' + esc(probe + '|' + chLabel) + '" ' +
       'style="background:' + bg + ';border-color:' + bd + ';color:' + color + '">' +
       '<div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
@@ -505,8 +514,7 @@
       '<button class="btn-ghost" style="width:auto;padding:6px 12px;font-size:12px;flex:0 0 auto;align-self:center;margin-top:0" data-act="testjwgl">探测</button>' +
     '</div>';
   }
-  
-  
+
   function loadHomeTodayCount() {
     var today = API.dayOfWeek(new Date());
     Promise.resolve(API.getWeekCourses(S.week)).then(function (courses) {
@@ -516,8 +524,8 @@
       setTimeout(paintHeroStats, 0);
     }).catch(function () {});
   }
+
   function loadHomeCourses() {
-    
     if (!document.getElementById('h-course')) {
       if (document.getElementById('h-stat-course')) loadHomeTodayCount();
       return;
@@ -540,12 +548,13 @@
         fmtDate(new Date()) + ' ' + weekdayName(today) + '</span></div>' + blockErr(e) + '</div>';
     });
   }
+
   function viewHome(c) {
     var today = API.dayOfWeek(new Date());
     var conf = homeCardConf();
     var on = {};
     conf.forEach(function (x) { on[x.k] = x.on; });
-    
+
     if (!conf.some(function (x) { return x.on; })) {
       c.innerHTML =
         '<div class="card flat" style="text-align:center;padding:30px 16px">' +
@@ -555,10 +564,9 @@
         '</div>';
       return;
     }
-    
+
     var chunk = {
       status: function () { return '<div id="h-status">' + homeStatusBar() + '</div>'; },
-      
       hero: function () { return '<div id="h-hero">' + heroHtml(null, today) + '</div>'; },
       net: function () { return '<div id="h-net">' + loading('正在读取网络信息…') + '</div>'; },
       quick: function () { return homeQuickCard(); },
@@ -568,32 +576,30 @@
     var html = '';
     conf.forEach(function (x) { if (x.on && chunk[x.k]) html += chunk[x.k](); });
     c.innerHTML = html;
-    
+
     if (on.status && API.probeAndApply) {
       API.probeAndApply().then(function () {
         var el = document.getElementById('h-status');
         if (el) el.innerHTML = homeStatusBar();
       }).catch(function () {});
     }
-    
+
     if (on.net) {
       fillBlock('h-net', API.getNetOverview(false), function (n) {
         setTimeout(function () { patchNetCard(n); }, 0);
         return netMiniCard(n);
       }, function (e) {
-        
         return '<div class="card"><div class="section-title">校园网信息</div>' +
           '<div class="long-press-tip" style="padding:4px 0 8px">暂时读不到网络信息：' +
           esc(String((e && e.message) || e)).slice(0, 80) + '</div>' +
           '<button class="btn-ghost" style="width:auto;padding:6px 14px;font-size:12px" data-act="netrefresh">重试</button></div>';
       });
-      
-      
+
       refreshHomeDevices(false);
     }
-    
+
     if (on.course || on.hero) loadHomeCourses();
-    
+
     if (on.hero) {
       var elecTtl = (API.getCacheTtlMin ? API.getCacheTtlMin('elec', 5) : 5) * 60 * 1000;
       if (HOME.elec != null && HOME._elecAt && (Date.now() - HOME._elecAt) < elecTtl) {
@@ -610,7 +616,7 @@
         }).catch(function () {});
       }
     }
-    
+
     if (on.exam) {
       fillBlock('h-exam', API.getExams(), function (exams) {
         exams = exams || [];
@@ -622,8 +628,7 @@
       });
     }
   }
-  
-  
+
   function homeCardsSheet() {
     var list = homeCardConf();
     function titleOf(k) {
@@ -638,7 +643,6 @@
         '<div class="home-switch' + (it.on ? ' on' : '') + '" data-act="homecard:toggle:' + it.k + '"></div>' +
       '</div>';
     }).join('');
-    
     var qlist = quickConf();
     var qrows = qlist.map(function (it, idx) {
       var m = moduleOf(it.k) || {};
@@ -657,8 +661,7 @@
       '<div class="card flat" style="padding:4px 16px">' + qrows + '</div>' +
       '<button class="btn-ghost" style="margin-top:16px" data-act="homecard:reset">恢复默认</button>';
   }
-  
-  
+
   var CACHE_TTL_DEFS = [
     { k: 'kb',      t: '课表',           def: 1440, s: '内存缓存；落盘的冷启动秒开不受影响' },
     { k: 'profile', t: '个人信息',       def: 43200, s: '姓名/学院/专业等学籍信息；换账号登录后建议调回实时刷一次' },
@@ -676,7 +679,6 @@
     { k: 'month', t: '月', s: 2592000 },
     { k: 'year', t: '年', s: 31536000 }
   ];
-  
   function ttlSecToNumUnit(sec) {
     if (!sec) return { n: 0, u: 'min' };
     for (var i = TTL_UNITS.length - 1; i >= 0; i--) {
@@ -688,11 +690,9 @@
     if (!sec) return '实时';
     var r = ttlSecToNumUnit(sec), ut = '秒';
     for (var i = 0; i < TTL_UNITS.length; i++) { if (TTL_UNITS[i].k === r.u) ut = TTL_UNITS[i].t; }
-    
     if (r.u === 'month') return r.n + ' 个月';
     return r.n + ' ' + ut;
   }
-  
   function ttlApply(key) {
     var ne = $('#ttl-num-' + key), ue = $('#ttl-u-' + key);
     if (!ne || !ue) return null;
@@ -732,21 +732,21 @@
       blocks +
       '<button class="btn-ghost" style="margin-top:16px" data-act="ttlreset">恢复默认</button>';
   }
+
   function courseRowHtml(x) {
-    return '<div class="course-row" data-act="course:' + x.id + '">' +
+    return '<div class="course-row" data-act="courseslot:' + x.id + '">' +
       '<div class="cr-time"><div class="s">' + x.start + '-' + x.end + '</div><div class="e">' + (API.SECTIONS[x.start - 1] || {}).t + '</div></div>' +
       '<div class="cr-bar" style="background:' + x.hex + '"></div>' +
       '<div class="cr-main"><div class="cr-name">' + esc(x.name) + '</div>' +
-      '<div class="cr-info"><span>' + esc(x.teacher) + '</span><span>' + esc(x.room) + '</span><span>' + x.weeks.length + ' 周</span></div></div>' +
+      '<div class="cr-info"><span>' + esc(x.teacher) + '</span><span>' + esc(x.room) + '</span><span>' + esc(weeksText(x.weeks)) + '</span></div></div>' +
       '</div>';
   }
   function examMini(e) {
-    
     return '<div class="list-item"><div class="li-ico bg-red">' + I.exam + '</div>' +
       '<div class="li-main"><div class="li-t">' + esc(e.course) + '</div><div class="li-s">' + esc(e.date) + ' ' + esc(e.time) + ' · ' + esc(e.room) + '</div></div>' +
       '<div class="li-v" style="font-size:12px;color:var(--danger)">' + esc(e.type) + '</div></div>';
   }
-  
+
   function viewSchedule(c) {
     Promise.all([S.schedView === 'week' ? API.getWeekCourses(S.week) : API.getAllCourses()]).then(function (r) {
       var head =
@@ -754,7 +754,6 @@
           '<button class="' + (S.schedView === 'week' ? 'on' : '') + '" data-act="schedview:week">周课表</button>' +
           '<button class="' + (S.schedView === 'all' ? 'on' : '') + '" data-act="schedview:all">总课表</button>' +
         '</div>';
-      
       if (S.route !== 'schedule') return;
       c.innerHTML = head + (S.schedView === 'week' ? weekTable(r[0]) : allTable(r[0]));
     }).catch(function (e) {
@@ -762,6 +761,7 @@
       c.innerHTML = failCard(e);
     });
   }
+
   function weekTable(courses) {
     var mon = API.weekStartDate(S.week), today = API.dayOfWeek(new Date()), curW = API.currentWeek();
     var head = '<div class="sched-head"><div class="sh-d"></div>';
@@ -770,26 +770,40 @@
       head += '<div class="sh-d' + (d === today && S.week === curW ? ' today' : '') + '">' + weekdayName(d).replace('周', '') + '<span class="dd">' + (dd.getMonth() + 1) + '/' + dd.getDate() + '</span></div>';
     }
     head += '</div>';
+
     var body = '<div class="sched-body"><div class="sched-col">';
     for (var s = 1; s <= 10; s++) {
       var sec = API.SECTIONS[s - 1] || {};
-      body += '<div class="slot-num"><b>' + s + '</b>' + String(sec.t || '').slice(0, 5) + '</div>';
+      body += '<div class="slot-num">' + String(sec.t || '').slice(0, 5) + '<b>' + s + '</b></div>';
     }
     body += '</div>';
+
     for (var d2 = 1; d2 <= 7; d2++) {
       var isToday = (d2 === today && S.week === curW);
       body += '<div class="sched-day" style="position:relative">';
       for (var s2 = 1; s2 <= 10; s2++) body += '<div class="slot-cell' + (isToday ? ' today' : '') + '"></div>';
+      var bySlot = {}, slotOrder = [];
       courses.filter(function (x) { return x.day === d2; }).forEach(function (x) {
-        var top = (x.start - 1) * 52 + 2, h = (x.end - x.start + 1) * 52 - 4;
-        body += '<div class="course-block" data-act="course:' + x.id + '" style="top:' + top + 'px;height:' + h + 'px;background:' + x.hex + '">' +
-          '<div class="cb-name">' + esc(x.name) + '</div>' +
-          '<div class="cb-room">' + esc(x.room) + '</div>' +
-        '</div>';
+        var k = x.start + '-' + x.end;
+        if (!bySlot[k]) { bySlot[k] = []; slotOrder.push(k); }
+        bySlot[k].push(x);
+      });
+      slotOrder.forEach(function (k) {
+        var arr = bySlot[k], n = arr.length;
+        arr.forEach(function (x, i) {
+          var top = (x.start - 1) * 52 + 2, h = (x.end - x.start + 1) * 52 - 4;
+          var sty = 'top:' + top + 'px;height:' + h + 'px;background:' + x.hex;
+          if (n > 1) sty += ';left:calc(' + (i * 100 / n) + '% + 2px);width:calc(' + (100 / n) + '% - 4px);right:auto';
+          body += '<div class="course-block" data-act="courseslot:' + x.id + '" style="' + sty + '">' +
+            '<div class="cb-name">' + esc(x.name) + '</div>' +
+            '<div class="cb-room">' + esc(x.room) + '</div>' +
+          '</div>';
+        });
       });
       body += '</div>';
     }
     body += '</div>';
+
     var sw =
       '<div class="week-switch">' +
         '<button class="ws-btn" data-act="week:-1"' + (S.week <= 1 ? ' disabled' : '') + '><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transform:rotate(180deg)"><path d="M9 6l6 6-6 6"/></svg></button>' +
@@ -798,44 +812,126 @@
           ' · 共 ' + API.CONFIG.TOTAL_WEEKS + ' 周</div></div>' +
         '<button class="ws-btn" data-act="week:1"' + (S.week >= API.CONFIG.TOTAL_WEEKS ? ' disabled' : '') + '><svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M9 6l6 6-6 6"/></svg></button>' +
       '</div>';
+
     return sw + '<div class="sched-wrap">' + head + body + '</div>' +
       '<div class="long-press-tip" style="text-align:center;margin-top:12px">点击课程查看详情 · 左右滑动或点箭头切换周次</div>';
   }
+
+  function mergeSlots(rows) {
+    var map = {}, list = [];
+    (rows || []).forEach(function (s) {
+      var k = s.day + '-' + s.start + '-' + s.end;
+      if (!map[k]) { map[k] = { day: s.day, start: s.start, end: s.end, room: s.room || '', weeks: [] }; list.push(map[k]); }
+      var t = map[k];
+      (s.weeks || []).forEach(function (w) { if (t.weeks.indexOf(w) < 0) t.weeks.push(w); });
+      if (!t.room && s.room) t.room = s.room;
+    });
+    list.forEach(function (t) { t.weeks.sort(function (a, b) { return a - b; }); });
+    list.sort(function (a, b) { return (a.day - b.day) || (a.start - b.start); });
+    return list;
+  }
+
   function allTable(courses) {
     if (!courses.length) return empty('📚', '暂无课程');
+    var byCourse = [], idx = {};
+    courses.forEach(function (c) {
+      var k = c.groupKey || c.id;
+      if (!idx[k]) { idx[k] = { head: c, rows: [] }; byCourse.push(idx[k]); }
+      idx[k].rows.push(c);
+    });
     var groups = { '必修': [], '选修': [], '实践': [] };
-    courses.forEach(function (c) { (groups[c.type] || groups['必修']).push(c); });
+    byCourse.forEach(function (g) { (groups[g.head.type] || groups['必修']).push(g); });
     var html = '<div class="card">';
     ['必修', '选修', '实践'].forEach(function (k) {
       if (!groups[k].length) return;
       html += '<div class="section-title">' + k + '课 <span class="more">' + groups[k].length + ' 门</span></div>';
-      groups[k].forEach(function (x) {
-        var wk = x.weeks.length ? x.weeks[0] + '-' + x.weeks[x.weeks.length - 1] + '周' + (x.weeks.length === 8 ? '(1-8周)' : '') : '-';
+      groups[k].forEach(function (g) {
+        var x = g.head;
+        var slots = mergeSlots(g.rows);
+        var rooms = [];
+        slots.forEach(function (t) { if (t.room && rooms.indexOf(t.room) < 0) rooms.push(t.room); });
         html += '<div class="all-course" data-act="course:' + x.id + '">' +
           '<div class="ac-bar" style="background:' + x.hex + '"></div>' +
           '<div class="ac-main"><div class="ac-name">' + esc(x.name) + '</div>' +
           '<div class="ac-tags">' +
             '<span class="tag">' + num(x.credits, 1) + ' 学分</span>' +
-            '<span class="tag grey">' + weekdayName(x.day) + ' ' + x.start + '-' + x.end + '节</span>' +
-            '<span class="tag grey">' + esc(x.room) + '</span>' +
+            slots.map(function (t) {
+              return '<span class="tag grey">' + weekdayName(t.day) + ' ' + t.start + '-' + t.end + '节 · ' + esc(weeksText(t.weeks)) + '</span>';
+            }).join('') +
+            (rooms.length ? '<span class="tag grey">' + esc(rooms.join(' / ')) + '</span>' : '') +
             '<span class="tag grey">' + esc(x.teacher) + '</span>' +
-            '<span class="tag ' + (x.type === '实践' ? 'orange' : 'green') + '">' + esc(wk) + '</span>' +
           '</div></div>' +
           '<span class="chev">' + I.chevron + '</span>' +
         '</div>';
       });
     });
     html += '</div>';
-    var total = courses.reduce(function (a, b) { return a + (Number(b.credits) || 0); }, 0);
-    html += '<div class="card flat" style="text-align:center;color:var(--text-2);font-size:13px">本学期共 <b>' + courses.length + '</b> 门课程，合计 <b>' + num(total, 1) + '</b> 学分</div>';
-    
+    var total = byCourse.reduce(function (a, g) { return a + (Number(g.head.credits) || 0); }, 0);
+    html += '<div class="card flat" style="text-align:center;color:var(--text-2);font-size:13px">本学期共 <b>' + byCourse.length + '</b> 门课程，合计 <b>' + num(total, 1) + '</b> 学分</div>';
     html += '<div style="text-align:center;margin-top:12px">' +
       '<button class="btn-ghost" style="width:auto;padding:8px 22px" data-act="kbpdf">⬇ 下载课表 PDF（保存到 Download）</button></div>';
     return html;
   }
-  function showCourse(id) {
+
+  var EVAL_URL = 'https://www.cauc.edu.cn/jxpj/inspection_mobile/result_endingClassList.html?type=XSJKPJ';
+
+  function jxpjLoginThenOpen(title, extra) {
+    var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
+    var c = (API.getCreds && API.getCreds()) || {};
+    function openIt(autoFill) {
+      var o = {
+        url: EVAL_URL, title: title, browse: true, mapCampus: false,
+        user: c.sid || '', pwd: c.pwd || '', auto: !!autoFill
+      };
+      if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) o[k] = extra[k];
+      if (LW && LW.open) {
+        LW.open(o).catch(function (e) { toast('打开失败：' + ((e && e.message) || e)); });
+      } else { window.open(EVAL_URL, '_blank'); }
+    }
+    if (!c.sid || !c.pwd) { openIt(false); return; }
+    toast('正在登录评教…');
+    API.jxpjLogin(c.sid, c.pwd).then(function (r) {
+      if (r && r.ok) { toast('评教已登录'); openIt(false); return; }
+      if (r && r.needCaptcha) toast('需要验证码，请在页面里输入后点登录');
+      else if (r && r.message) toast(r.message);
+      openIt(true);
+    }).catch(function () { openIt(true); });
+  }
+
+  function showCourse(id, compact) {
     Promise.all([API.getAllCourses()]).then(function (r) {
-      var x = r[0].filter(function (c) { return c.id === id; })[0]; if (!x) return;
+      var all = r[0] || [];
+      var x = all.filter(function (c) { return c.id === id; })[0]; if (!x) return;
+
+      if (compact) {
+        var t0 = (API.SECTIONS[x.start - 1] || {}).t || '';
+        openSheet(
+          '<div style="font-size:17px;font-weight:700;margin-bottom:14px">' + esc(x.name) + '</div>' +
+          '<div class="kv"><span class="k">上课时间</span><span class="v">' +
+            weekdayName(x.day) + ' 第 ' + x.start + '-' + x.end + ' 节' + (t0 ? ' · ' + esc(t0) : '') +
+          '</span></div>' +
+          '<div class="kv"><span class="k">上课地址</span><span class="v">' + esc(x.room || '—') + '</span></div>' +
+          '<div class="kv"><span class="k">授课教师</span><span class="v">' + esc(x.teacher || '—') + '</span></div>' +
+          '<div class="kv"><span class="k">学分</span><span class="v">' +
+            (x.credits ? x.credits : '—') + '</span></div>' +
+          '<button class="btn-primary" style="margin-top:18px" data-act="closesheet">知道了</button>'
+        );
+        return;
+      }
+
+      var key = x.groupKey || x.id;
+      var mine = all.filter(function (c) { return (c.groupKey || c.id) === key; });
+      var slots = mergeSlots(mine);
+      var slotRows = slots.map(function (t) {
+        var isCur = (t.day === x.day && t.start === x.start && t.end === x.end);
+        var t1 = (API.SECTIONS[t.start - 1] || {}).t || '';
+        return '<div class="kv"' + (isCur ? ' style="font-weight:600"' : '') + '>' +
+          '<span class="k">' + weekdayName(t.day) + ' 第 ' + t.start + '-' + t.end + ' 节' + (isCur ? '（本节）' : '') + '</span>' +
+          '<span class="v">' + esc(weeksText(t.weeks)) +
+            (t1 ? '<br><span style="color:var(--muted);font-size:12px">' + esc(t1) + '</span>' : '') +
+            (t.room ? '<br><span style="color:var(--muted);font-size:12px">' + esc(t.room) + '</span>' : '') +
+          '</span></div>';
+      }).join('');
       openSheet(
         '<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">' +
           '<div style="width:6px;height:44px;border-radius:6px;background:' + x.hex + '"></div>' +
@@ -843,25 +939,17 @@
           '<div class="long-press-tip">' + esc(x.type) + ' · ' + num(x.credits, 1) + ' 学分</div></div>' +
         '</div>' +
         '<div class="kv"><span class="k">授课教师</span><span class="v">' + esc(x.teacher) + '</span></div>' +
-        '<div class="kv"><span class="k">上课时间</span><span class="v">' + weekdayName(x.day) + ' 第 ' + x.start + '-' + x.end + ' 节</span></div>' +
-        '<div class="kv"><span class="k">时间点</span><span class="v">' +
-          (API.sectionTime ? (API.sectionTime(x.start) + ' ~ ' +
-            (((API.SECTIONS[x.end - 1] || {}).e) || (API.SECTIONS[x.end - 1] || {}).t || ''))
-            : ((API.SECTIONS[x.start - 1] || {}).t + ' - ' + (API.SECTIONS[x.end - 1] || {}).t)) +
-          '</span></div>' +
-        '<div class="kv"><span class="k">上课地点</span><span class="v">' + esc(x.room) + '</span></div>' +
-        '<div class="kv"><span class="k">上课周次</span><span class="v">' + x.weeks[0] + '-' + x.weeks[x.weeks.length - 1] + ' 周</span></div>' +
+        (slots.length > 1 ? '<div class="long-press-tip" style="margin:4px 0 2px">上课时间（共 ' + slots.length + ' 段）</div>' : '') +
+        slotRows +
         '<button class="btn-primary" style="margin-top:18px" data-act="closesheet">知道了</button>'
       );
     }).catch(function (e) {
-      
       toast('课程详情加载失败：' + String((e && e.message) || e).slice(0, 60));
     });
   }
-  
+
   function viewServices(c) {
-    
-    
+    if (evalOn()) evalSetLoop(true);
     var mapItem = { t: '校园地图', ic: I.map, c: 'bg-lime', sub: '南苑 / 北苑手绘地图' };
     c.innerHTML =
       '<div class="card"><div class="section-title">学习与教务</div>' +
@@ -869,18 +957,23 @@
           return '<div class="list-item" data-act="go:' + m.k + '"><div class="li-ico ' + m.c + '">' + m.ic + '</div>' +
             '<div class="li-main"><div class="li-t">' + m.t + '</div></div><span class="chev">' + I.chevron + '</span></div>';
         }).join('') +
+        '<div class="list-item" data-act="go:eval"><div class="li-ico bg-blue">' + I.book + '</div>' +
+          '<div class="li-main"><div class="li-t">期末评教</div><div class="li-s">探测 / 自动填答 · 外网直连无需 WebVPN</div></div>' +
+          '<span class="chev">' + I.chevron + '</span></div>' +
         '<div class="list-item"><div class="li-ico ' + mapItem.c + '">' + mapItem.ic + '</div>' +
           '<div class="li-main"><div class="li-t">' + mapItem.t + '</div><div class="li-s">' + mapItem.sub + '</div></div>' +
           '<span class="chev">' + I.chevron + '</span></div>' +
       '</div>';
   }
-  
+
+
   function profileSkeleton() {
     return '<div class="card"><div class="profile-head">' +
       '<div class="p-ava">…</div>' +
       '<div><div class="p-name">正在读取学生信息…</div><div class="p-sub">' + esc(savedSid()) + '</div></div>' +
       '</div></div>';
   }
+
   function profileUnavailable(detail) {
     var msg = detail ? String(detail).slice(0, 80) : '学生信息暂未取到（WebVPN 会话建立中，稍候自动重试）';
     return '<div class="card" style="padding:16px">' +
@@ -890,6 +983,7 @@
       '<button class="btn-ghost" style="width:auto;padding:8px 18px;margin-top:10px" data-act="testjwgl">探测教务系统</button>' +
     '</div>';
   }
+
   function profileCard(stu) {
     return '<div class="card">' +
       '<div class="profile-head"><div class="p-ava">' + esc(String(stu.name).slice(0, 1)) + '</div>' +
@@ -902,21 +996,21 @@
       (stu.campus ? '<div class="kv"><span class="k">校区</span><span class="v">' + esc(stu.campus) + '</span></div>' : '') +
     '</div>';
   }
+
   function viewMine(c) {
-    
     var menu =
       '<div class="card">' +
         '<div class="list-item" data-act="go:jwgl"><div class="li-ico bg-blue">' + I.jwgl + '</div><div class="li-main"><div class="li-t">教务系统（免登入口）</div><div class="li-s">成绩 / 修读计划 / 考试 · 手动操作全部功能</div></div><span class="chev">' + I.chevron + '</span></div>' +
         '<div class="list-item" data-act="openwebvpn"><div class="li-ico bg-indigo">' + I.vpn + '</div><div class="li-main"><div class="li-t">WebVPN</div><div class="li-s">校园网门户 · 已登录态直达全部资源</div></div><span class="chev">' + I.chevron + '</span></div>' +
-        
         '<div class="list-item" data-act="channel"><div class="li-ico bg-cyan">' + I.link + '</div><div class="li-main"><div class="li-t">网络通道</div><div class="li-s">当前：' + API.channelLabel() + (API.canBypassCors() ? ' · 原生HTTP' : ' · 浏览器') + '</div></div><span class="chev">' + I.chevron + '</span></div>' +
-        
         '<div class="list-item" data-act="homecards"><div class="li-ico bg-violet">' + I.cards + '</div><div class="li-main"><div class="li-t">首页卡片设置</div><div class="li-s">显示/隐藏与排序</div></div><span class="chev">' + I.chevron + '</span></div>' +
         '<div class="list-item" data-act="cachettl"><div class="li-ico bg-teal">' + I.refresh + '</div><div class="li-main"><div class="li-t">缓存时长</div><div class="li-s">课表 / 设备 / 考试 / 电费 · 分数据源自定义</div></div><span class="chev">' + I.chevron + '</span></div>' +
         '<div class="list-item" data-act="darkmode"><div class="li-ico bg-slate">' + I.bolt + '</div><div class="li-main"><div class="li-t">深色模式</div><div class="li-s">当前：' + (localStorage.getItem('cauc_dark') === '1' ? '开' : localStorage.getItem('cauc_dark') === '0' ? '关' : '跟随系统') + ' · 点击切换（开→关→跟随系统）</div></div></div>' +
         '<div class="list-item" data-act="togglemode"><div class="li-ico bg-lime">' + I.db + '</div><div class="li-main"><div class="li-t">数据源</div><div class="li-s">当前：' +
           (API.isMock() ? '演示数据（点此切回真实系统）' : '学校真实系统（点此切到演示）') + '</div></div><span class="chev">' + I.chevron + '</span></div>' +
-        
+        '<div class="list-item" data-act="loginmode-sheet"><div class="li-ico bg-indigo">' + I.key + '</div><div class="li-main"><div class="li-t">登录方式</div><div class="li-s">当前：' +
+          (API.getLoginMode() === 'auto' ? '无感登录' : '网页登录') +
+          (API.isFallback() ? '（已自动回落到网页登录）' : '') + ' · 点此切换</div></div><span class="chev">' + I.chevron + '</span></div>' +
         '<div class="list-item" data-act="clearcreds"><div class="li-ico bg-amber">' + I.lock + '</div><div class="li-main"><div class="li-t">已保存账密</div><div class="li-s">' +
           (API.hasCreds && API.hasCreds() ? '已记住（' + esc(savedSid()) + '）· 点此清除' : '未保存') + '</div></div><span class="chev">' + I.chevron + '</span></div>' +
         '<div class="list-item"><div class="li-ico bg-green">' + I.shield + '</div><div class="li-main"><div class="li-t">账号安全</div><div class="li-s">密码仅存于本机，不保存明文</div></div></div>' +
@@ -924,8 +1018,9 @@
       '<div class="card"><div class="list-item" data-act="logout"><div class="li-ico bg-red">' + I.logout + '</div><div class="li-main"><div class="li-t" style="color:var(--danger)">退出登录</div></div></div></div>' +
       '<div style="text-align:center;color:var(--muted);font-size:11.5px;padding:8px 0 20px">航大校园 v1.0 · 无广告版<br/>数据来源：' +
         (API.isMock() ? '演示数据' : '学校系统') + '</div>';
+
     c.innerHTML = '<div id="m-profile">' + profileSkeleton() + '</div>' + menu;
-    
+
     if (API.hasCreds && API.hasCreds()) {
       fillBlock('m-profile', API.getStudent(), function (stu) {
         return (stu && stu.name) ? profileCard(stu) : profileUnavailable();
@@ -937,10 +1032,9 @@
       if (el) el.innerHTML = profileUnavailable('尚未登录');
     }
   }
-  
+
   function viewExams(c) {
     API.getExams().then(function (list) {
-      
       if (S.route !== 'exams') return;
       if (!list.length) { c.innerHTML = empty('🎉', '本学期暂无考试安排'); return; }
       var html = '';
@@ -960,11 +1054,10 @@
       c.innerHTML = failCard(e);
     });
   }
-  
-  
+
   var ES = { campus: '东丽', area: null, building: null, floor: null, room: null, areas: null, buildings: null, floors: null, rooms: null, err: '' };
+
   function viewElectricity(c) {
-    
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem('cauc_elec_room') || 'null'); } catch (e) {}
     var base = '';
@@ -972,7 +1065,7 @@
       base = String(typeof saved.room === 'string' ? saved.room
         : ((saved.room && (saved.room.roomid || saved.room.room)) || '')).replace(/(空调|照明)$/, '');
     }
-    
+
     if (!API.isMock() && !saved) {
       c.innerHTML = '<div id="elec-main"></div>';
       var main0 = $('#elec-main');
@@ -983,25 +1076,29 @@
       } else { renderElecSetup(main0); }
       return;
     }
+
     var campusName = (saved && saved.area && (saved.area.areaname || saved.area.area)) || '';
     var buildName = (saved && saved.building && saved.building.building) || '';
     var isNinghe = /宁河/.test((saved && saved.area && (saved.area.areaname || saved.area.area)) || '');
     var isMock = API.isMock();
-    
+
     var meterCards = isNinghe
       ? '<div class="card"><div class="section-title">当前剩余电费</div>' +
-          '<div class="meter">' +
-            '<div class="m-box" style="background:linear-gradient(135deg,#f7a52b,#e08600);flex:1"><div class="mt">⚡ 电费余额</div>' +
+          '<div class="meter sm">' +
+            '<div class="m-box" style="background:linear-gradient(135deg,#f7a52b,#e08600);flex:1"><div class="mt" style="color:#15181d">' +
+              I.bolt.replace('<svg ', '<svg style="fill:currentColor;stroke:none" ') + ' 电费余额</div>' +
               '<div class="mv" id="elec-light-remain">—</div><div class="mu">元</div></div>' +
           '</div></div>' +
         '<div class="card"><div class="section-title">用电明细</div>' +
           '<div class="kv"><span class="k">剩余金额</span><span class="v" id="elec-light-remain2">—</span></div>' +
         '</div>'
-      : '<div class="card"><div class="section-title">当前剩余电量</div>' +
+      :         '<div class="card"><div class="section-title">当前剩余电量</div>' +
           '<div class="meter">' +
-            '<div class="m-box" style="background:linear-gradient(135deg,#f7a52b,#e08600)"><div class="mt">' + I.bolt + ' 照明</div>' +
+            '<div class="m-box" style="background:linear-gradient(135deg,#f7a52b,#e08600)"><div class="mt">' +
+              I.bolt + ' 照明</div>' +
               '<div class="mv" id="elec-light-remain">—</div><div class="mu">度</div></div>' +
-            '<div class="m-box" style="background:linear-gradient(135deg,#2a72de,#0b3d91)"><div class="mt">❄ 空调</div>' +
+            '<div class="m-box" style="background:linear-gradient(135deg,#2a72de,#0b3d91)"><div class="mt">' +
+              I.ac.replace('<svg ', '<svg style="fill:none;stroke:#fff;stroke-linecap:round;stroke-linejoin:round" ') + ' 空调</div>' +
               '<div class="mv" id="elec-ac-remain">—</div><div class="mu">度</div></div>' +
           '</div></div>' +
         '<div class="card"><div class="section-title">用电明细 <span class="more" id="elec-fresh"></span></div>' +
@@ -1011,11 +1108,13 @@
           '<div class="kv"><span class="k">空调 · 剩余(收费电量)</span><span class="v" id="elec-ac-remain2">—</span></div>' +
           '<div class="kv"><span class="k">空调 · 累计用电</span><span class="v" id="elec-ac-total">—</span></div>' +
         '</div>';
+
     var meterPills = isNinghe ? '' :
       '<div class="pill-row" style="margin-bottom:8px">' +
         '<button class="pill' + (ELEC_METER === '照明' ? ' on' : '') + '" data-act="elec-meter-light">⚡ 照明</button>' +
         '<button class="pill' + (ELEC_METER === '空调' ? ' on' : '') + '" data-act="elec-meter-ac">❄ 空调</button>' +
       '</div>';
+
     c.innerHTML =
       '<div class="banner">' + I.info + '<div id="elec-banner">' +
         esc(campusName) + ' ' + esc(buildName) + ' ' + esc(base) +
@@ -1042,7 +1141,7 @@
         '<button class="btn-ghost" style="flex:1" data-act="elec-reset">更换宿舍房间</button>' +
       '</div>' +
       '<div id="elec-err" class="long-press-tip" style="text-align:center;margin-top:8px"></div>';
-    
+
     var setTxt = function (id, txt) {
       var el = document.getElementById(id);
       if (el) el.textContent = txt;
@@ -1071,9 +1170,9 @@
       }
     });
   }
-  
+
+
   function renderElecSetup(c) {
-    
     var pillRow = function (list, sel, key, act, displayKey) {
       if (!list) return loading();
       if (!list.length) return '<div class="long-press-tip">暂无数据</div>';
@@ -1083,13 +1182,16 @@
         return '<button class="pill' + (sel === v ? ' on' : '') + '" data-act="' + act + ':' + esc(v) + '">' + esc(txt) + '</button>';
       }).join('');
     };
+
     var isNingheCampus = ES.campus === '宁河';
     var hasAnyArea = isNingheCampus || !!(ES.areas && ES.areas.length);
+
     var html =
       '<div class="card"><div class="section-title">校区</div><div class="pill-row">' +
         '<button class="pill' + (!isNingheCampus ? ' on' : '') + '" data-act="escampus:东丽">东丽校区</button>' +
         '<button class="pill' + (isNingheCampus ? ' on' : '') + '" data-act="escampus:宁河">宁河校区</button>' +
       '</div></div>';
+
     if (!isNingheCampus && hasAnyArea) {
       html += '<div class="card"><div class="section-title">公寓</div><div class="pill-row">' +
         pillRow(ES.areas, ES.area && ES.area.area, 'area', 'es:area', 'areaname') + '</div></div>';
@@ -1102,6 +1204,7 @@
       pillRow(ES.floors, ES.floor && ES.floor.floorid, 'floorid', 'es:floor', 'floor') + '</div></div>';
     if (ES.floor) html += '<div class="card"><div class="section-title">房间</div><div class="pill-row">' +
       pillRow(ES.rooms, ES.room && ES.room.roomid, 'roomid', 'es:room', 'room') + '</div></div>';
+
     if (ES.err && !isNingheCampus && !hasAnyArea) {
       html += '<div class="banner" style="background:#fff8e6;border-color:#ffe0a3;color:#8a5a00;margin-top:12px">' + I.info +
         '<div>查询失败</div>' +
@@ -1109,8 +1212,10 @@
     } else {
       html += '<div class="long-press-tip" style="text-align:center;margin-top:12px">选好房间后自动记住，下次不用再选。</div>';
     }
+
     c.innerHTML = html;
   }
+
   function esLoad(levelNo) {
     var p;
     if (levelNo === 1) p = API.elecArea().then(function (l) { ES.areas = l; });
@@ -1121,8 +1226,8 @@
     ES.err = '';
     return p.catch(function (e) { ES.err = e.message || String(e); });
   }
-  
-  
+
+
   function netStateLabel(n) {
     if (n.channel === 'webvpn') return '校外 · WebVPN 通道';
     if (n.online === null || n.online === undefined) return '认证状态检测中…';
@@ -1130,8 +1235,7 @@
     if (n.netIn || n.campusIp) return '校园网未认证 · 内网可达，认证后才能上外网';
     return '当前不在校园网';
   }
-  
-  
+
   function netPageHtml(n) {
     var on = n.online;
     return '<div class="card">' +
@@ -1144,19 +1248,18 @@
       '<button class="btn-ghost" style="width:100%;margin-top:10px" data-act="netrefresh">刷新网络信息</button>' +
     '</div>';
   }
+
   function renderNetPage(fresh) {
     var box = $('#net-box');
     if (!box) return Promise.resolve();
     return Promise.resolve(API.getNetOverview(fresh)).then(function (n) {
       n = n || {};
       box.innerHTML = netPageHtml(n);
-      
       Promise.all([
         (n.whenOnline ? n.whenOnline : Promise.resolve({ online: n.online, netIn: n.netIn })),
         (n.whenCampusIp ? n.whenCampusIp : Promise.resolve(n.campusIp))
       ]).then(function (r) {
         var s = r[0];
-        
         if (s && typeof s === 'object') {
           n.online = !!s.online;
           n.netIn = !!s.netIn;
@@ -1166,7 +1269,6 @@
         }
         n.campusIp = r[1] || n.campusIp;
         var b2 = $('#net-box');
-        
         var html2 = netPageHtml(n);
         if (b2 && b2.innerHTML !== html2) b2.innerHTML = html2;
       }).catch(function () {});
@@ -1174,12 +1276,10 @@
       box.innerHTML = failCard(e);
     });
   }
+
   function viewNetwork(c) {
-    
-    
     c.innerHTML =
       '<div id="self-box"></div>' +
-      
       '<div id="self-logcard"></div>' +
       '<div id="net-box">' + loading('正在读取网络信息…') + '</div>' +
       '<div id="netfee-box"></div>' +
@@ -1189,29 +1289,25 @@
       '</div></div>';
     renderNetPage(false);
     selfRender();
-    
     renderLogCard();
     renderNetFee($('#netfee-box'));
   }
-  
+
+
   function openCashier(cashier) {
     var url = String((cashier && cashier.url) || '').trim();
     var fields = (cashier && cashier.fields) || {};
-    
     if (!url && String(fields.package || fields.packageValue || '').indexOf('WXPay') >= 0) {
       toast('微信支付已停用，请选择其他支付方式（一卡通余额 / 支付宝 / 工行聚合）');
       return;
     }
     if (!url) { toast('该渠道未返回收银台地址'); return; }
     var names = Object.keys(fields);
-    
-    
     var LW = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView) || null;
     if (LW && LW.openPost) {
       LW.openPost({ url: url, fields: fields, title: '支付' }).catch(function () {});
       return;
     }
-    
     var f = document.createElement('form');
     f.action = url; f.method = 'POST';
     names.forEach(function (k) {
@@ -1222,12 +1318,15 @@
     document.body.appendChild(f);
     f.submit();
   }
-  
+
   var NET_PAYTYPE = '1';
   function renderNetFee(box) {
     if (!box || !API.netInfo) return;
-    if (!API.isLogged || !API.savedElecRoom) {  }
-    
+    if (API.isMock()) {
+      box.innerHTML = '<div class="card"><div class="section-title">校园网费</div>' +
+        '<div class="long-press-tip">演示模式下不查询学校网费系统（可在「我的 → 数据源」切回真实）。</div></div>';
+      return;
+    }
     box.innerHTML =
       '<div class="card"><div class="section-title">校园网费 <span class="more" id="netfee-acc">新中新</span></div>' +
         '<div class="long-press-tip" id="netfee-status" style="margin-bottom:10px">正在读取账户信息…</div>' +
@@ -1255,10 +1354,9 @@
       if (s1) s1.textContent = String((e && e.message) || e);
     });
   }
-  
+
   function refreshHomeDevices(force) {
     if (!API.selfDevices) return;
-    
     if (S.route !== 'home') return;
     if (!force) {
       if (refreshHomeDevices._at && (Date.now() - refreshHomeDevices._at) < 2000) return;
@@ -1273,10 +1371,8 @@
     var tries = 0, attempts = 0;
     var tick = function () {
       var el = document.querySelector('#h-net .js-net-dev');
-      
       if (!el) { if (tries++ < 120) setTimeout(tick, 500); return; }
       var go = function () {
-        
         if (API.selfCaptchaCooling && API.selfCaptchaCooling()) {
           var eStop = document.querySelector('#h-net .js-net-dev');
           if (eStop) eStop.innerHTML =
@@ -1285,7 +1381,6 @@
             '到「校园网信息」页点「打开学校登录页登录」登一次即可恢复。</div>';
           return;
         }
-        
         var devWd = setTimeout(function () {
           var ew = document.querySelector('#h-net .js-net-dev');
           if (ew && /正在读取设备信息/.test(ew.textContent || '')) {
@@ -1311,7 +1406,6 @@
             e.setAttribute('data-filled', '1');
             return;
           }
-          
           if (attempts++ < 6) {
             e.innerHTML = '<div class="long-press-tip" style="padding:6px 0 2px">' +
               '正在登录自助服务并读取在线设备…（第 ' + attempts + ' 次）</div>';
@@ -1328,7 +1422,7 @@
     };
     setTimeout(tick, 0);
   }
-  
+
   function netMiniCard(n) {
     n = n || {};
     var on = n.online;
@@ -1341,16 +1435,13 @@
       '</div>' +
       '<div class="kv"><span class="k">本机校园网 IP</span><span class="v mono js-campus-ip" style="font-weight:700">' +
         (n.campusIp ? esc(n.campusIp) : '—') + '</span></div>' +
-      
-      
       '<div class="section-title" style="margin:12px 0 0;font-size:13px">校园网在线设备</div>' +
       '<div class="js-net-dev">' +
         netDevicesHtml((API.selfDevicesCached && API.selfDevicesCached()) || null, 3) +
       '</div>' +
     '</div>';
   }
-  
-  
+
   function devRow(d) {
     var mins = Math.round((d.useTime || 0) / 60);
     var dur = mins >= 60 ? (Math.floor(mins / 60) + ' 小时 ' + (mins % 60) + ' 分') : (mins + ' 分钟');
@@ -1362,9 +1453,9 @@
           ' · 已用 ' + esc(dur) + '</span></span>' +
       '<span class="v mono" style="font-size:14px">' + esc(d.ip || '—') + '</span></div>';
   }
+
   function netDevicesHtml(res, limit) {
     if (res === null || res === undefined) {
-      
       var slow = (API.channel && API.channel() === 'webvpn')
         ? '<span style="opacity:.75">（校外通道较慢，首次约需 30 秒）</span>' : '';
       return '<div class="long-press-tip" style="padding:6px 0 2px">正在读取设备信息…' + slow + '</div>';
@@ -1385,7 +1476,7 @@
     }
     return devs.slice(0, limit || 9).map(devRow).join('');
   }
-  
+
   function patchNetCard(n) {
     if (!n) return;
     function set(sel, txt) {
@@ -1397,7 +1488,6 @@
     }
     if (n.whenOnline) {
       n.whenOnline.then(function (s) {
-        
         if (s && typeof s === 'object') {
           n.online = !!s.online;
           n.netIn = !!s.netIn;
@@ -1410,10 +1500,11 @@
         set('.js-net-state', netStateLabel(n));
       }).catch(function () {});
     }
-    
   }
-  
-  
+
+
+
+
   function selfLoginCard(prep) {
     prep = prep || {};
     var c = (API.getCreds && API.getCreds()) || {};
@@ -1428,15 +1519,15 @@
         '正常情况账号 ' + esc(c.sid || '') + ' 会自动登录（平时不需要验证码）。</div>' +
     '</div>';
   }
-  var selfLastDevices = [];   
+
+  var selfLastDevices = [];
+
   function selfDevicesCard(res) {
     var devs = res.devices || [];
     selfLastDevices = devs;
-    
     var html = '<div class="card"><div class="section-title">校园网在线设备 ' +
       '<span class="more" data-act="selfrefresh">刷新</span></div>' +
       (devs.length ? devs.map(function (d, i) {
-        
         var mins = Math.round((d.useTime || 0) / 60);
         var dur = mins >= 60 ? (Math.floor(mins / 60) + ' 小时 ' + (mins % 60) + ' 分') : (mins + ' 分钟');
         return '<div class="kv"><span class="k">' +
@@ -1450,10 +1541,9 @@
           '</span></div>';
       }).join('') : '<div class="long-press-tip" style="padding:6px 0 2px">学校系统里当前没有在线设备。</div>') +
       '</div>';
-    
     return html;
   }
-  
+
   var _logRange = null;
   function _fmtDay(d) {
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
@@ -1470,7 +1560,7 @@
     }
     var mins = Number(x.minutes) || 0;
     var dur = mins >= 60 ? (Math.floor(mins / 60) + '小时' + (mins % 60) + '分') : (mins + ' 分钟');
-    var mb = Number(x.flow) || 0;   
+    var mb = Number(x.flow) || 0;
     var flow = mb >= 1024 ? (mb / 1024).toFixed(2) + ' GB' : (mb.toFixed(1) + ' MB');
     return '<div class="kv"><span class="k">' + esc(hm(a) || '—') + ' → ' + esc(hm(b) || '在线') +
       '<br><span style="color:var(--muted);font-size:12px">时长 ' + esc(dur) + ' · 流量 ' + esc(flow) +
@@ -1481,18 +1571,15 @@
     if (!box || !API.selfOnlineLog) return;
     if (!_logRange) _logRange = _logRangeDefault(7);
     var r = _logRange;
-    
     var inp = 'style="flex:1;min-width:118px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--card);color:var(--text)"';
     var qbtn = 'class="pill" style="padding:4px 10px;font-size:12.5px"';
     box.innerHTML = '<div class="card"><div class="section-title">上网记录 ' +
         '<span class="more" id="log-total"></span></div>' +
-      
       '<div style="display:flex;gap:6px;align-items:center;margin:2px 0 8px;flex-wrap:wrap">' +
         '<input type="date" id="log-from" value="' + r.from + '" ' + inp + '>' +
         '<span style="color:var(--muted)">~</span>' +
         '<input type="date" id="log-to" value="' + r.to + '" ' + inp + '>' +
       '</div>' +
-      
       '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">' +
         '<button ' + qbtn + ' data-act="logquick:1">今天</button>' +
         '<button ' + qbtn + ' data-act="logquick:7">近 7 天</button>' +
@@ -1514,7 +1601,6 @@
       var rows = (res && res.rows) || [];
       var totalEl = $('#log-total');
       if (totalEl) totalEl.textContent = (res && res.total ? res.total : rows.length) + ' 条';
-      
       var sid = savedSid();
       if (rows.length && rows[0].userName && sid && rows[0].userName !== sid) {
         box.innerHTML = failCard(new Error('返回的数据身份不符（' + rows[0].userName + ' ≠ ' + sid +
@@ -1534,29 +1620,25 @@
       if (box) box.innerHTML = failCard(new Error('查询失败：' + ((e && e.message) || e)));
     });
   }
+
   var NEED_LOGIN_MSG = '学校系统本次要求验证码 —— 用官方登录页登一次即可（平时不需要验证码）。';
-  
+
   function selfOpenLogin() {
     var base = API.selfBase ? API.selfBase() : 'https://www.cauc.edu.cn';
     var url = base + '/Self/login/?302=LI';
     var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
     if (!LW || !LW.open) { window.open(url, '_blank'); return; }
     var c = (API.getCreds && API.getCreds()) || {};
-    
     var openIt = function () {
-    
     var mc = (url.indexOf('webvpn') >= 0);
     if (API.syncMapCampus) { try { mc = API.syncMapCampus() || mc; } catch (e) {} }
     toast('已打开学校登录页（App 内置浏览器）');
-    
     LW.open({
       url: url, fallbackUrl: url, title: '校园网自助服务',
       domains: [], browse: true, mapCampus: mc,
       user: c.sid || '', pwd: c.pwd || '', auto: false
     }).then(function (r) {
-      
       try { if (r && r.ok && API.selfResetCaptcha) API.selfResetCaptcha(); } catch (e) {}
-      
       var after = function () {
         try { if (S.route === 'network') selfRender(); } catch (e) {}
       };
@@ -1584,10 +1666,8 @@
         }).catch(function () { openIt(); });
     } else { openIt(); }
   }
-  
-  
+
   var _selfSig = '';
-  
   function devSig(res) {
     var devs = (res && res.devices) || [];
     return 'dev:' + devs.map(function (d) {
@@ -1596,23 +1676,20 @@
   }
   function selfSetHtml(box, html, sig) {
     if (!box) return false;
-    if (sig != null && sig === _selfSig) return false;   
+    if (sig != null && sig === _selfSig) return false;
     if (sig != null) _selfSig = sig;
     box.innerHTML = html;
     return true;
   }
+
   function selfRender(force) {
     var box = $('#self-box');
     if (!box) return;
-    
     if (!force) {
       var now = Date.now();
       if (selfRender._at && (now - selfRender._at) < 1200) return;
       selfRender._at = now;
     }
-    
-    
-    
     var snap = (API.selfDevicesCached && API.selfDevicesCached()) || null;
     if (snap) {
       var sig0 = 'snap:' + JSON.stringify(snap);
@@ -1620,18 +1697,18 @@
       API.selfDevicesForce().then(function (res) {
         var el = $('#self-box');
         if (el && res && res.ok) {
-          
           selfSetHtml(el, selfDevicesCard(res), devSig(res));
         } else if (el && res && res.needCaptcha) {
           selfSetHtml(el, selfLoginCard(res), 'cap:' + JSON.stringify(res));
         }
       }).catch(function () {});
-      return;   
+      return;
     }
+
     selfSetHtml(box, '<div class="card">' +
       '<div class="section-title">校园网在线设备 <span class="more">自助服务</span></div>' +
       '<div class="long-press-tip" style="padding:6px 0 2px">正在读取在线设备…</div></div>');
-    
+
     function fill(el, html) {
       if (!el) return;
       selfSetHtml(el, html, 'html:' + html.length + ':' + html.slice(0, 120));
@@ -1639,17 +1716,15 @@
     function devices() {
       return API.selfOnline().then(function (d) {
         var res = { ok: true, devices: d };
-        
         selfSetHtml($('#self-box'), selfDevicesCard(res), devSig(res));
       });
     }
     function form(p) { fill($('#self-box'), selfLoginCard(p || {})); }
+
     API.selfAlive(true).then(function (ok) {
       if (ok) return devices();
-      
       return API.ensureWebvpn().catch(function () { return false; })
         .then(function () {
-          
           if (API.selfCaptchaCooling && API.selfCaptchaCooling()) {
             return { needCaptcha: true, ok: false };
           }
@@ -1657,11 +1732,9 @@
         })
         .then(function (p) {
           if (p && p.loggedIn) return devices();
-          
           if (p && p.ok === false && p.error) return form({ msg: p.error });
           var c = (API.getCreds && API.getCreds()) || {};
           if (!c.sid || !c.pwd) return form(p);
-          
           return API.selfLogin(c.sid, c.pwd, '').then(function (r) {
             if (r && r.ok) return devices();
             if (r && r.code === 'captcha') return form({ msg: NEED_LOGIN_MSG });
@@ -1669,16 +1742,15 @@
           });
         });
     }).catch(function (e) {
-      
       form({ msg: String((e && e.message) || e) });
     });
   }
-  
+
   function fmtExpire(s) {
     s = String(s || '');
     return s.length === 8 ? s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6) : s;
   }
-  
+
   function renderXzxBalance(box) {
     if (!box || !API.getEcardBalance) return;
     Promise.all([
@@ -1705,8 +1777,47 @@
         '<div class="long-press-tip">' + esc(String((e && e.message) || e)) + '</div></div>';
     });
   }
+
+  var _evalTimer = null;
+  function evalProbeOnce() {
+    var el = document.getElementById('eval-state');
+    if (el) el.textContent = '探测中…';
+    API.jxpjProbe().then(function (r) {
+      var el2 = document.getElementById('eval-state');
+      if (!el2) return;
+      if (!r.loggedIn) el2.textContent = '未登录：先点「打开评教页」登录一次';
+      else if (r.tasks) el2.textContent = '✅ 检测到可评任务！';
+      else el2.textContent = '已登录 · 暂无可评任务';
+    }).catch(function (e) {
+      var el3 = document.getElementById('eval-state');
+      if (el3) el3.textContent = '探测失败：' + String((e && e.message) || e).slice(0, 60);
+    });
+  }
+  function evalSetLoop(on) {
+    if (_evalTimer) { clearInterval(_evalTimer); _evalTimer = null; }
+    if (on) {
+      evalProbeOnce();
+      _evalTimer = setInterval(evalProbeOnce, 10 * 60 * 1000);
+    }
+  }
+  function evalOn() { try { return localStorage.getItem('cauc_eval_probe') === '1'; } catch (e) { return false; } }
+
+  function viewEval(c) {
+    var on = evalOn();
+    c.innerHTML =
+      '<div class="card"><div class="section-title">期末评教 <span class="more" id="eval-state">…</span></div>' +
+        '<div class="long-press-tip">外网直连、无需 WebVPN。先「打开评教页」登录一次（账号=学号，密码=统一身份认证密码），' +
+        '登录态会保留；此后可开启自动探测或自动填答。</div>' +
+        '<button class="btn-ghost" data-act="evalopen">打开评教页（登录 / 手动评）</button>' +
+        '<button class="btn-ghost" data-act="evalauto">自动评教（B 多于 A 随机填答）</button>' +
+        '<button class="btn-ghost" data-act="evaltoggle">' + (on ? '关闭自动探测' : '开启自动探测') + '</button>' +
+        '<div class="long-press-tip">自动探测：每 10 分钟查一次是否有可评任务，检测到会提示。' +
+        '学校服务器人多时探测会慢，属正常。</div>' +
+      '</div>';
+    if (on) evalProbeOnce(); else evalSetLoop(false);
+  }
+
   function viewCard(c) {
-    
     var flowBox = c;
     API.getCard().then(function (k) {
       var stats = k.stats;
@@ -1718,6 +1829,7 @@
             (k.expire ? ' · 有效期至 ' + esc(fmtExpire(k.expire)) : '') +
             (k.balance == null ? '<br/>该余额来自校内一卡通系统，校外不可达' : '') + '</div>' +
         '</div>';
+
       if (stats) {
         html += '<div class="card" style="margin-top:14px"><div class="section-title">本月收支</div>' +
           '<div class="meter">' +
@@ -1725,7 +1837,7 @@
             '<div class="m-box" style="background:linear-gradient(135deg,#22c06a,#12a150)"><div class="mt">收入</div><div class="mv">￥' + num(stats.income) + '</div></div>' +
           '</div></div>';
       }
-      
+
       html += '<div class="card" style="margin-top:14px"><div class="section-title">卡片服务</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
           '<button class="btn-ghost" style="width:auto;padding:9px 18px;margin-top:0;color:#c0392b" data-act="cardops">挂失 / 解挂</button>' +
@@ -1733,6 +1845,7 @@
         '</div>' +
         '<div class="long-press-tip" style="margin-top:8px">挂失 / 解挂都在学校官方页面完成（App 内免登直达，不会跳到系统浏览器）；成功与失败提示由学校页面给出。</div>' +
       '</div>';
+
       var tx = k.transactions || [];
       html += '<div class="card" style="margin-top:14px"><div class="section-title">近期交易 <span class="more">' + tx.length + ' 条</span></div>' +
         (tx.length
@@ -1742,6 +1855,7 @@
             }).join('')
           : empty('🧾', '暂无交易记录')) +
         '</div>';
+
       if (flowBox) flowBox.innerHTML = html;
     }).catch(function (e) {
       if (flowBox) {
@@ -1751,17 +1865,16 @@
       }
     });
   }
-  
-  
+
   function roomBuildList(r) {
     if (!r.ninghe) return API.ROOM_BUILDS;
     var nh = (API.roomBuildsNinghe && API.roomBuildsNinghe()) || [];
     return [{ v: '', t: '全部楼号' }].concat(nh.map(function (n) { return { v: n, t: n }; }));
   }
   function lhVal(r) { return r.ninghe ? (r.lhnh || '') : (r.lh || ''); }
+
   function viewRooms(c) {
     var r = S.rooms;
-    
     if (!r._restored) {
       r._restored = true;
       try {
@@ -1774,9 +1887,8 @@
         }
       } catch (e) {}
     }
-    var WEEKS = 20;   
-    
-    
+    var WEEKS = 20;
+
     function multiRow(key, items, label, cols) {
       var sel = r[key] || [];
       var cls = cols ? 'pill-row pill-grid' : 'pill-row';
@@ -1789,13 +1901,15 @@
           return '<button class="pill' + (on ? ' on' : '') + '" data-act="roompick:' + key + ':' + v + '">' + x.t + '</button>';
         }).join('') + '</div></div>';
     }
+
     var weekItems = []; for (var wi = 1; wi <= WEEKS; wi++) {
       weekItems.push({ v: wi, t: wi === API.currentWeek() ? '本周' : ('' + wi) });
     }
-    var dayItems = [1, 2, 3, 4, 5, 6, 7].map(function (d) { return { v: d, t: weekdayName(d).replace('星期', '') }; });
-    
+    var dayItems = [1, 2, 3, 4, 5, 6, 7].map(function (d) {
+      return { v: d, t: ['一', '二', '三', '四', '五', '六', '日'][d - 1] };
+    });
     var jcItems = []; for (var ji = 1; ji <= 12; ji++) { jcItems.push({ v: ji, t: '第' + ji + '节' }); }
-    
+
     var resHtml;
     if (r.loading) resHtml = loading('正在查询空教室…');
     else if (r.err) resHtml = failCard(new Error(r.err));
@@ -1812,7 +1926,7 @@
             }).join('') + '</div>' +
             '<div class="long-press-tip" style="margin-top:12px">按' +
               (r.weeks.length === 1 ? '第' + r.weeks[0] + '周' : r.weeks.length + '个周次') + ' · ' +
-              r.days.map(function (d) { return weekdayName(d).replace('星期', '周'); }).join('/') + ' · ' +
+              r.days.map(function (d) { return weekdayName(d); }).join('/') + ' · ' +
               (r.sections.length === 1 ? '第' + r.sections[0] + '节' : r.sections.length + '个节次') +
               (API.isMock() ? ' · 演示数据' : ' · 实时') + '</div></div>'
           : '<div class="long-press-tip" style="padding:6px 0 2px">该时段没有空闲教室，换个时段试试。</div></div>');
@@ -1821,6 +1935,7 @@
         '选好 <b>周次、星期、节次</b>（必选，可多选）后点「查询」。<br/>' +
         '楼号 / 类别 / 名称 / 座位数都不选 = 不筛选。</div></div>';
     }
+
     c.innerHTML =
       '<div class="card"><div class="section-title">校区</div><div class="pill-row">' +
         '<button class="pill' + (!r.ninghe ? ' on' : '') + '" data-act="roomcampus:0">东丽校区</button>' +
@@ -1846,16 +1961,15 @@
       '<button class="btn-primary" data-act="roomquery">查 询 空 教 室</button>' +
       '<div id="rooms-result" style="margin-top:14px">' + resHtml + '</div>';
   }
-  
+
   function roomsReadInputs() {
     var r = S.rooms;
     var g = function (id) { var el = $('#' + id); return el ? el.value : ''; };
-    
     if (r.ninghe) r.lhnh = g('room-lh'); else r.lh = g('room-lh');
     r.cdlb = g('room-cdlb');
     r.cdmc = g('room-cdmc'); r.qszws = g('room-qszws'); r.jszws = g('room-jszws');
   }
-  
+
   function roomsQuery() {
     var r = S.rooms;
     roomsReadInputs();
@@ -1876,7 +1990,6 @@
         r.loading = false; r.result = res;
         var el2 = $('#rooms-result');
         if (!el2 || S.route !== 'rooms') return;
-        
         if (r.ninghe) {
           var sel = $('#room-lh');
           if (sel) {
@@ -1906,10 +2019,10 @@
         var el2 = $('#rooms-result'); if (el2) el2.innerHTML = failCard(e);
       });
   }
-  
+
   function viewCalendar(c) {
     API.getCalendar().then(function (list) {
-      if (S.route !== 'calendar') return;   
+      if (S.route !== 'calendar') return;
       c.innerHTML = '<div class="card"><div class="section-title">' + esc(API.CONFIG.SEMESTER) + ' 校历</div>' +
         '<div class="timeline">' + list.map(function (x) {
           return '<div class="tl-item' + (x.done ? ' done' : '') + '"><div class="tl-d">' + esc(x.date) + '</div>' +
@@ -1920,36 +2033,39 @@
       c.innerHTML = failCard(e);
     });
   }
-  
+
   function viewGpa(c) {
     API.getGPA().then(function (g) {
-      if (S.route !== 'gpa') return;   
-      var pct = Math.min(100, g.credits / g.required * 100);
+      if (S.route !== 'gpa') return;
+      var got = Number(g.credits) || 0;
+      var req = Number(g.required) || 0;
+      var pct = req > 0 ? Math.min(100, got / req * 100) : 0;
       c.innerHTML =
         '<div class="hero" style="text-align:center"><div class="h-meta">平均学分绩点 GPA</div>' +
           '<div style="font-size:46px;font-weight:800;margin:6px 0 4px">' + num(g.total) + '</div>' +
           '<div class="h-meta">修读情况 ' + esc(g.rank) + '</div></div>' +
         '<div class="card"><div class="section-title">学分进度</div>' +
           '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="kv" style="border:none"><span class="k">已修学分</span><span class="v">' + g.credits + ' / ' + g.required + '</span></div>' +
-          '<div class="long-press-tip">毕业学分要求 ' + g.required + ' 学分，完成度 ' + num(pct, 1) + '%</div>' +
+          '<div class="kv" style="border:none"><span class="k">已修学分</span><span class="v">' + got + (req > 0 ? ' / ' + req : '') + '</span></div>' +
+          (req > 0
+            ? '<div class="long-press-tip">毕业学分要求 ' + req + ' 学分，完成度 ' + num(pct, 1) + '%</div>'
+            : '<div class="long-press-tip">教务页面未给出「毕业学分要求」，故不计算完成度（可到「教务系统 → 学业情况」页查看）。</div>') +
         '</div>';
     }).catch(function (e) {
       if (S.route !== 'gpa') return;
       c.innerHTML = failCard(e);
     });
   }
-  
+
   function viewNet(c) {
     c.innerHTML = loading('正在检测校园网…');
     Promise.all([
       API.netStatus().catch(function () { return { online: false, status: 0 }; })
     ]).then(function (r) {
-      if (S.route !== 'net') return;   
+      if (S.route !== 'net') return;
       var st = r[0];
       var sid = savedSid();
       var hasPwd = API.hasSessionPwd && API.hasSessionPwd();
-      
       var heroTxt = st.online ? '已在线'
         : (st.netIn ? '校园网内 · 未认证' : '未认证');
       var heroSub = st.online ? '外网可达'
@@ -1978,6 +2094,7 @@
       c.innerHTML = failCard(e);
     });
   }
+
   function runNetTest() {
     var box = $('#net-test-result'); if (!box) return;
     box.innerHTML = '测试中…';
@@ -1989,9 +2106,7 @@
       }).join('');
     }).catch(function (e) { box.textContent = '测试失败：' + (e.message || e); });
   }
-  
-  
-  
+
   function doWebvpnLogin() {
     var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
     if (!LW || !LW.open) { toast('当前环境不支持'); return; }
@@ -2020,14 +2135,13 @@
       }
     }).catch(function (e) { toast('打开失败：' + ((e && e.message) || e)); });
   }
+
   function doTestJwgl() {
-    
     toast('正在重登 WebVPN…');
     API.reloginWebvpn().then(function (r) {
       if (r && r.ok) {
         toast(r.verified ? '✅ WebVPN 已重登'
                          : ('⚠️ ' + (r.reason || '登录已发起，稍后自动确认')));
-        
         API.probeAndApply(true).catch(function () {});
       } else {
         toast('❌ 重登失败：' + ((r && r.reason) || '未知原因'));
@@ -2040,6 +2154,7 @@
       toast('❌ 重登异常：' + ((e && e.message) || e));
     });
   }
+
   function doNetLogin() {
     var sid = savedSid();
     if (!sid) { toast('请先登录'); return; }
@@ -2059,13 +2174,11 @@
       renderContent();
     }).catch(function (e) { toast('注销失败：' + (e.message || e)); });
   }
-  
-  
+
   var JWGL_HOSTS = {
     campus: 'http://jwgl.cauc.edu.cn',
     webvpn: 'https://http-jwgl-cauc-edu-cn-80.webvpn.cauc.edu.cn'
   };
-  
   var JWGL_PAGES = [
     { t: '学业情况（GPA·修读进度·成绩）', u: 'xsxy/xsxyqk_cxXsxyqkIndex.html?echarts=1&gnmkdm=N105515&layout=default', d: '一站式：平均绩点 / 学分要求与获得 / 全部课程成绩' },
     { t: '教务门户（全部功能）', u: 'xtgl/index_initMenu.html', d: '成绩 / 课表 / 考试 / 选课 / 学籍 / 教材等全部功能' }
@@ -2073,7 +2186,6 @@
   function openJwgl(pageUrl) {
     var sid = savedSid();
     if (!sid) { toast('请先在"我的"中登录'); return; }
-    
     var host = (API.webvpnBlocked && API.webvpnBlocked())
       ? JWGL_HOSTS.campus
       : (API.jwglBase ? API.jwglBase() : JWGL_HOSTS.campus);
@@ -2084,6 +2196,7 @@
       : host + '/' + q;
     var fallbackUrl = JWGL_HOSTS.campus + '/' + q;
     var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
+
     function doOpen() {
       if (!LW || !LW.open) { window.open(url, '_blank'); return; }
       LW.open({
@@ -2092,16 +2205,13 @@
         title: '教务系统',
         domains: [],
         browse: true,
-        
         mapCampus: (url.indexOf('webvpn.cauc.edu.cn') >= 0)
       }).then(function (r) {
-        
         if (r && r.webvpnLoginBounce) {
           if (API.wvSessionInvalidate) API.wvSessionInvalidate('jwgl-bounce');
           var now = Date.now();
           if (now - (openJwgl._lastBounce || 0) > 30000) {
             openJwgl._lastBounce = now;
-            
             toast('会话已失效（可能被其他设备登录顶掉），正在重新登录…');
             var refreshP = (API.jwglRefreshSession
               ? API.jwglRefreshSession().catch(function () { return null; })
@@ -2130,7 +2240,6 @@
           }
           return;
         }
-        
         if (r && r.webvpnRejected && API.markWebvpnBlocked) {
           API.markWebvpnBlocked();
           if (API.probeAndApply) API.probeAndApply(true);
@@ -2140,7 +2249,7 @@
         toast('打开失败：' + ((e && e.message) || e));
       });
     }
-    
+
     if (API.wvSessionEnsure) {
       API.wvSessionEnsure(host).then(function (s) {
         if (s && s.ok === false && s.reason === 'no-cred') {
@@ -2194,9 +2303,7 @@
         break;
       }
       case 'jwglopen': openJwgl(el.getAttribute('data-url')); break;
-      
       case 'cardops': {
-        
         toast('正在打开卡片操作页…');
         API.cardOpsUrl().then(function (u) {
           var LWc = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
@@ -2206,7 +2313,6 @@
         break;
       }
       case 'cardlost': {
-        
         if (!confirm('确认挂失校园卡？挂失后卡片将暂停消费（可解挂恢复）。')) break;
         toast('正在挂失…');
         API.cardLost().then(function (r) {
@@ -2215,7 +2321,6 @@
         break;
       }
       case 'cardunlost': {
-        
         openSheet(
           '<div class="section-title">解挂校园卡</div>' +
           '<div class="long-press-tip" style="margin:2px 0 12px">请输入一卡通查询密码（不是学校统一身份认证密码，通常是 6 位）。仅本次使用、不保存。</div>' +
@@ -2238,7 +2343,6 @@
         break;
       }
       case 'cardfound': {
-        
         toast('正在获取捡获卡入口…');
         API.cardFoundUrl().then(function (u) {
           var LWf = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
@@ -2295,19 +2399,32 @@
       }
       case 'netlogin': doNetLogin(); break;
       case 'netlogout': doNetLogout(); break;
+      case 'evalopen':
+        jxpjLoginThenOpen('期末评教', null);
+        break;
+      case 'evalauto': {
+        if (!confirm('自动评教将按「B 多于 A」随机填答并逐份提交，确认开始？')) break;
+        jxpjLoginThenOpen('自动评教中（请勿操作页面）', { autoEval: true });
+        break;
+      }
+      case 'evaltoggle': {
+        var on = evalOn();
+        localStorage.setItem('cauc_eval_probe', on ? '0' : '1');
+        evalSetLoop(!on);
+        toast(!on ? '已开启自动探测（每10分钟）' : '已关闭自动探测');
+        if (S.route === 'services' || S.route === 'eval') renderContent();
+        break;
+      }
       case 'nettest': runNetTest(); break;
       case 'testjwgl': doTestJwgl(); break;
-      
       case 'selfopen': selfOpenLogin(); break;
       case 'selfrefresh':
-        
         try { if (API.selfResetCaptcha) API.selfResetCaptcha(); } catch (e) {}
         API.selfDevicesForce().then(function (res) {
           var el = $('#self-box');
           if (el && res) el.innerHTML = selfDevicesCard(res);
         }).catch(function () { selfRender(); });
         break;
-      
       case 'logquery': {
         var f = (($('#log-from') || {}).value || '').trim();
         var tt = (($('#log-to') || {}).value || '').trim();
@@ -2327,7 +2444,6 @@
         break;
       }
       case 'selfkick': {
-        
         var ki = parseInt(parts[1], 10);
         var dv = selfLastDevices[ki] || (API.selfDevicesCached() || { devices: [] }).devices[ki];
         if (!dv || !dv.sessionId) { toast('该设备无会话信息，无法下线'); break; }
@@ -2345,21 +2461,17 @@
         break;
       }
       case 'selflogout': {
-        
         API.selfLogout().then(function () { toast('已退出自助服务'); selfRender(); });
         break;
       }
       case 'netrefresh': {
-        
         try { if (API.invalidateSelfDevices) API.invalidateSelfDevices(); } catch (e) {}
-        
         var netBox = $('#h-net');
         if (netBox) {
           netBox.innerHTML = loading('正在刷新网络信息…');
           API.getNetOverview(true).then(function (n) {
             netBox.innerHTML = netMiniCard(n);
             patchNetCard(n);
-            
             refreshHomeDevices(true);
           }).catch(function () { netBox.innerHTML = ''; });
           toast('正在刷新网络信息…');
@@ -2370,7 +2482,6 @@
         break;
       }
       case 'openwebvpn': {
-        
         toast('正在打开 WebVPN 门户…');
         var openPortal = function () {
           var LWv = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
@@ -2419,17 +2530,15 @@
         }).catch(function (e) { toast('断开失败：' + ((e && e.message) || e)); });
         break;
       }
-      
       case 'back': handleBack(); break;
       case 'schedview': S.schedView = parts[1]; renderContent(); break;
       case 'week': S.week += parseInt(parts[1], 10); renderContent(); break;
-      case 'course': showCourse(act.split(':').slice(1).join(':')); break;
-      
+      case 'courseslot': showCourse(act.split(':').slice(1).join(':'), true); break;
+      case 'course': showCourse(act.split(':').slice(1).join(':'), false); break;
       case 'roomcampus':
         S.rooms.ninghe = parts[1] === '1';
         renderContent(); break;
       case 'roompick': {
-        
         var rk = parts[1], rv = (rk === 'lh' || rk === 'cdlb') ? parts[2] : parseInt(parts[2], 10);
         var arr = S.rooms[rk] || [], ix = arr.indexOf(rv);
         if (ix >= 0) arr.splice(ix, 1); else arr.push(rv);
@@ -2437,15 +2546,16 @@
         renderContent(); break;
       }
       case 'roomall': {
-        
         var ak = parts[1], on = parts[2] === '1', n = ak === 'weeks' ? 20 : ak === 'days' ? 7 : 12;
         S.rooms[ak] = on ? Array.from({ length: n }, function (_, i) { return i + 1; }) : [];
         renderContent(); break;
       }
       case 'roomquery':
         roomsQuery(); break;
-      case 'refresh': if (API.invalidateCourses) API.invalidateCourses(); toast('已刷新'); renderContent(); break;
-      case 'retry': if (API.invalidateCourses) API.invalidateCourses(); renderContent(); break;
+      case 'retry':
+        if (S.route === 'schedule' && API.invalidateCourses) API.invalidateCourses();
+        renderContent();
+        break;
       case 'gologin':
         API.setLoginMode('webview');
         localStorage.removeItem('cauc_token');
@@ -2454,12 +2564,10 @@
         renderLogin();
         break;
       case 'channel': openSheet(channelSheet()); break;
-      
       case 'homecards': openSheet(homeCardsSheet()); break;
       case 'homecard': {
         var op = parts[1], ck = parts[2];
         var hc = homeCardConf();
-        
         if (op === 'reset') {
           localStorage.removeItem('cauc_home_cards');
           localStorage.removeItem('cauc_home_quick');
@@ -2475,11 +2583,9 @@
           homeCardSave(hc);
         }
         openSheet(homeCardsSheet());
-        
         if (S.route === 'home') renderContent();
         break;
       }
-      
       case 'homequick': {
         var qop = parts[1], qk = parts[2];
         var qc = quickConf();
@@ -2500,10 +2606,8 @@
         if (S.route === 'home') renderContent();
         break;
       }
-      
       case 'cachettl': openSheet(cacheTtlSheet()); break;
       case 'darkmode': {
-        
         var cur = localStorage.getItem('cauc_dark');
         var nxt = cur == null ? '1' : (cur === '1' ? '0' : null);
         if (nxt == null) localStorage.removeItem('cauc_dark');
@@ -2519,13 +2623,13 @@
         openSheet(cacheTtlSheet());
         break;
       }
-      
       case 'escampus': {
         var nc = parts[1];
         if (ES.campus === nc) break;
         ES.campus = nc;
         ES.area = null; ES.building = null; ES.floor = null; ES.room = null;
         ES.areas = null; ES.buildings = null; ES.floors = null; ES.rooms = null;
+        try { localStorage.setItem('cauc_campus_pref', nc === '宁河' ? '宁河校区' : '东丽校区'); } catch (e) {}
         ES.err = '';
         renderContent();
         if (nc === '东丽') {
@@ -2538,10 +2642,9 @@
         }
         break;
       }
-      
       case 'es': {
         var lv = parts[1];
-        var val = act.split(':').slice(2).join(':');   
+        var val = act.split(':').slice(2).join(':');
         var find = function (list, key) {
           list = list || [];
           for (var i = 0; i < list.length; i++) {
@@ -2578,15 +2681,13 @@
         } else if (lv === 'room') {
           ES.room = find(ES.rooms, 'roomid');
           if (!ES.room) ES.room = { roomid: val, room: val };
-          
           API.setElecRoom(ES.area, ES.building, ES.floor, ES.room).then(function () {
             toast('已选择 ' + (ES.room.room || val));
-            renderContent();   
+            renderContent();
           });
         }
         break;
       }
-      
       case 'es-retry': {
         ES.err = '';
         var mR = $('#elec-main') || $('#content');
@@ -2597,14 +2698,11 @@
         });
         break;
       }
-      
       case 'elecrefresh': {
-        
         var tip = document.getElementById('elec-err');
         if (tip) tip.textContent = '正在刷新…';
         var setv = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
         API.getElectricity(true).then(function (e) {
-          
           if (e && e.light && e.light.remain != null) {
             HOME.elec = Number(e.light.remain);
             HOME.elecUnit = (e.light && e.light.unit) || '度';
@@ -2661,7 +2759,6 @@
         API.netRecharge(nAmt, NET_PAYTYPE).then(function (r) {
           nbtnRestore();
           if (r && r.cashier) {
-            
             openCashier(r.cashier);
             return;
           }
@@ -2676,7 +2773,6 @@
       case 'elec-pay-1':
       case 'elec-pay-5':
       case 'elec-pay-8': {
-        
         ELEC_PAYTYPE = act.replace('elec-pay-', '');
         var pp = document.querySelectorAll('[data-act^="elec-pay-"]');
         for (var qi = 0; qi < pp.length; qi++) {
@@ -2684,9 +2780,11 @@
         }
         var hint = document.querySelector('.elec-pay-hint');
         if (hint) {
+          var sr = (API.savedElecRoom && API.savedElecRoom()) || null;
+          var nh = /宁河/.test((sr && sr.area && (sr.area.areaname || sr.area.area)) || '');
           hint.textContent = (ELEC_PAYTYPE === '1'
             ? '从一卡通余额直接扣款、实时到账。'
-            : '下单后跳转收银台，在页面内完成支付。') + '照明与空调分开计量，请分别充值。';
+            : '下单后跳转收银台，在页面内完成支付。') + (nh ? '' : '照明与空调分开计量，请分别充值。');
         }
         break;
       }
@@ -2701,7 +2799,6 @@
         var meter = ELEC_METER;
         var payLabel = { '1': '一卡通余额', '4': '微信', '5': '支付宝', '8': '工行聚合' }[ELEC_PAYTYPE] || ELEC_PAYTYPE;
         if (!confirm('确认使用【' + payLabel + '】充值 ' + amt.toFixed(2) + ' 元到【' + base + meter + '】？')) break;
-        
         var btnRestore = function () {
           var b = document.querySelector('[data-act="elec-recharge"]');
           if (b) { b.disabled = false; b.classList.remove('btn-loading'); }
@@ -2712,7 +2809,6 @@
                          base, meter, amt, ELEC_PAYTYPE).then(function (r) {
           btnRestore();
           if (r && r.cashier) {
-            
             openCashier(r.cashier);
             return;
           }
@@ -2734,7 +2830,13 @@
       case 'loginmode':
         API.setLoginMode(parts[1]);
         if (parts[1] === 'auto') API.clearLoginFails();
-        renderLogin();
+        if (token()) {
+          toast(parts[1] === 'auto' ? '已切到无感登录' : '已切到网页登录');
+          openSheet(loginModeSheet());
+          renderContent();
+        } else {
+          renderLogin();
+        }
         break;
       case 'openlogin':
         window.open(API.CONFIG.LOGIN_URLS.webvpn, '_blank');
@@ -2788,7 +2890,7 @@
     }
   });
   $('#sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet') closeSheet(); });
-  
+
   document.addEventListener('input', function (e) {
     var id = (e.target && e.target.id) || '';
     if (id.indexOf('ttl-num-') === 0) ttlApply(id.slice(8));
@@ -2798,7 +2900,7 @@
     if (id.indexOf('ttl-num-') === 0) { ttlApply(id.slice(8)); toast('已保存'); }
     else if (id.indexOf('ttl-u-') === 0) { ttlApply(id.slice(6)); toast('已保存'); }
   });
-  
+
   var tx0 = null;
   document.addEventListener('touchstart', function (e) { if (S.route === 'schedule' && S.schedView === 'week') tx0 = e.touches[0].clientX; });
   document.addEventListener('touchend', function (e) {
@@ -2808,9 +2910,8 @@
     if (dx < 0 && S.week < API.CONFIG.TOTAL_WEEKS) { S.week++; renderContent(); }
     else if (dx > 0 && S.week > 1) { S.week--; renderContent(); }
   });
-  
-  
-  var LOGIN_PENDING = false;   
+
+  var LOGIN_PENDING = false;
   var BOOT_SHELL = '<div style="min-height:100vh;display:flex;align-items:center;' +
     'justify-content:center;color:#8994a8;font-size:14px">正在启动…' +
     '<span style="margin-left:6px;opacity:.8"></span></div>';
@@ -2820,18 +2921,17 @@
     a.classList.remove('hidden');
     if (!a.innerHTML) a.innerHTML = BOOT_SHELL;
   }
-  
+
+
   function caucSetDark(on) {
     try {
       if (on) document.documentElement.setAttribute('data-theme', 'dark');
       else document.documentElement.removeAttribute('data-theme');
     } catch (e) {}
   }
-  
   function caucCachedSysDark() {
     try { return localStorage.getItem('cauc_sys_dark') === '1'; } catch (e) { return false; }
   }
-  
   function caucPushDarkToNative(dark) {
     try {
       var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
@@ -2843,7 +2943,6 @@
     try { p = localStorage.getItem('cauc_dark'); } catch (e) {}
     if (p === '1') { caucSetDark(true); caucPushDarkToNative(true); if (cb) cb(); return; }
     if (p === '0') { caucSetDark(false); caucPushDarkToNative(false); if (cb) cb(); return; }
-    
     caucSetDark(caucCachedSysDark());
     var LW = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LoginWebView;
     if (LW && LW.isSystemDark) {
@@ -2857,12 +2956,11 @@
     } else { if (cb) cb(); }
   }
   applyDark();
-  
+
   window.addEventListener('cauc:native-theme', function () {
     console.log('[CaucDiag] 系统主题变化 → 重算深色模式');
     applyDark();
   });
-  
   try {
     var caucMq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
     if (caucMq) {
@@ -2871,13 +2969,12 @@
       else if (caucMq.addListener) caucMq.addListener(caucMqOn);
     }
   } catch (e) {}
-  
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) applyDark();
   });
+
   function boot() {
     showBootShell();
-    
     var wdWaited = 0;
     (function watchdog() {
       setTimeout(function () {
@@ -2894,10 +2991,8 @@
         else renderLogin();
       }, 10000);
     })();
-    
     try {
       localStorage.removeItem('cauc_wv_ask_at');
-      
       localStorage.removeItem('cauc_wv_fail_at');
       console.log('[CaucDiag] wv_ok=' + localStorage.getItem('cauc_wv_ok_at') +
         ' wv_off=' + localStorage.getItem('cauc_wv_off') +
@@ -2909,9 +3004,9 @@
         if (n > 0) console.log('[cookie] 已恢复 ' + n + ' 条会话 Cookie');
       }).catch(function () {});
     }
-    
-    
+
     try { API.setMode(localStorage.getItem('cauc_mode') === 'mock' ? 'mock' : 'real'); } catch (e) {}
+
     if (API.hasCreds && API.hasCreds()) {
       if (token()) { enterApp(); }
       else {
@@ -2923,7 +3018,6 @@
           enterApp();
         }).catch(function (e) {
           LOGIN_PENDING = false;
-          
           var m = String((e && e.message) || e);
           if (/密码|账号|不正确/.test(m)) { renderLogin(); return; }
           localStorage.setItem('cauc_token', 'real-offline-' + Date.now());
@@ -2937,7 +3031,6 @@
       $('#app').classList.remove('hidden');
       renderLogin();
     }
-    
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (rs) {
         rs.forEach(function (r) { r.unregister(); });
@@ -2949,7 +3042,6 @@
       }).catch(function () {});
     }
   }
-  
   var _lastBackAt = 0;
   function handleBack() {
     var sh = $('#sheet');
@@ -2959,7 +3051,6 @@
       var r = NAV.stack[NAV.stack.length - 1];
       S.route = r;
       if (['home', 'schedule', 'services', 'mine'].indexOf(r) >= 0) S.tab = r;
-      
       renderShell(); window.scrollTo(0, 0);
       return;
     }
@@ -2977,34 +3068,25 @@
     var CapApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (CapApp && CapApp.addListener) CapApp.addListener('backButton', function () { handleBack(); });
     window.addEventListener('cauc:back', handleBack);
-    
     window.addEventListener('cauc:webvpn-ok', function () {
       console.log('[CaucDiag] WebVPN 已登录');
-      
       try { if (API.selfPrewarm) API.selfPrewarm(); } catch (e) {}
-      
       setTimeout(function () { refreshHomeDevices(true); }, 300);
-      
       if (S.route === 'home') {
         var el = document.getElementById('h-status');
         if (el) el.innerHTML = homeStatusBar();
       }
-      
       if (S.route === 'network') selfRender();
       if (S.route === 'schedule') renderContent();
     });
-    
     window.addEventListener('cauc:kb-updated', function () {
       if (S.route === 'schedule') renderContent();
       if (S.route === 'home') loadHomeCourses();
     });
-    
     window.addEventListener('cauc:channel-ready', function () {
       try { API.prewarmAll(); } catch (e) {}
-      
       try { if (API.ecardPrewarm) setTimeout(function () { API.ecardPrewarm(); }, 600); } catch (e) {}
       setTimeout(function () { refreshHomeDevices(false); }, 200);
-      
       try {
         var host = document.getElementById('h-status');
         var cur = host && host.querySelector('.banner');
@@ -3015,35 +3097,31 @@
         }
       } catch (e) {}
     });
-    
     window.addEventListener('cauc:prewarm-done', function () {
       if (S.route === 'home') {
         try { loadHomeCourses(); } catch (e) {}
         try { refreshHomeDevices(false); } catch (e) {}
       }
     });
-    
     window.addEventListener('cauc:channel-changed', function () {
       try { if (API.invalidateCourses) API.invalidateCourses(); } catch (e) {}
       console.log('[CaucDiag] 通道已切换');
       if (S.route === 'home' || S.route === 'mine' || S.route === 'jwgl') renderContent();
     });
   })();
-  
+
   (function initForegroundReprobe() {
     if (!API.reprobeForeground) return;
     var lastAt = 0;
-    var awaySince = 0;                        
+    var awaySince = 0;
     var markAway = function () { if (!awaySince) awaySince = Date.now(); };
     var reprobe = function () {
-      
       var now = Date.now();
       if (now - lastAt < 2000) return;
       lastAt = now;
-      var away = awaySince ? (now - awaySince) : 0;   
+      var away = awaySince ? (now - awaySince) : 0;
       awaySince = 0;
       console.log('[CaucDiag] 回到前台（离开 ' + Math.round(away / 1000) + 's）→ 重新探测');
-      
       API.reprobeForeground(away).catch(function () {});
     };
     var CapApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
@@ -3056,17 +3134,17 @@
       try { CapApp.addListener('pause', markAway); } catch (e) {}
       try { CapApp.addListener('resume', function () { reprobe(); }); } catch (e) {}
     }
-    
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) reprobe(); else markAway();
     });
     window.addEventListener('focus', reprobe);
     window.addEventListener('blur', markAway);
-    
+
     setInterval(function () {
-      if (document.hidden) return;                 
+      if (document.hidden) return;
       try { if (API.wvVerifyNow) API.wvVerifyNow().catch(function () {}); } catch (e) {}
     }, 10 * 60 * 1000);
   })();
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

@@ -1,7 +1,7 @@
 {
   "name": "cauc-campus-app",
   "version": "1.0.0",
-  "description": "为中国民航大学在校生打造的第三方开源校园助手（无广告、凭据不出本机）。",
+  "description": "一个从零实现的校园 App，功能对齐「校园帕鲁」小程序的核心模块，但**代码自有、无广告、凭证不出本机**。",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

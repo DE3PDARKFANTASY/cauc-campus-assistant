@@ -1,17 +1,23 @@
 package com.hangda.campus;
+
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
+
 import com.getcapacitor.BridgeActivity;
+
 public class MainActivity extends BridgeActivity {
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(LoginWebViewPlugin.class);
-        super.onCreate(savedInstanceState);
         try {
             androidx.core.splashscreen.SplashScreen.installSplashScreen(this);
         } catch (Throwable ignored) {}
+        super.onCreate(savedInstanceState);
+
         final boolean dark = ShellBar.isNight(this);
+
         try {
             android.widget.FrameLayout host = findViewById(R.id.cauc_shellbar);
             if (host != null) {
@@ -19,7 +25,7 @@ public class MainActivity extends BridgeActivity {
                 host.addView(bar.root, new android.widget.FrameLayout.LayoutParams(
                         android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                         android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
-                bar.applyTheme(dark);       
+                bar.applyTheme(dark);
                 ShellBar.current = bar;
                 bar.setOnBack(new Runnable() {
                     @Override public void run() {
@@ -33,6 +39,7 @@ public class MainActivity extends BridgeActivity {
                 });
             }
         } catch (Throwable ignored) {}
+
         try {
             final android.view.View root = findViewById(R.id.cauc_root);
             if (root != null) {
@@ -52,14 +59,18 @@ public class MainActivity extends BridgeActivity {
                     });
             }
         } catch (Throwable ignored) {}
+
         Immersive.apply(this, dark);
+
         try { CookieVault.restore(this); } catch (Exception ignored) {}
     }
+
     @Override
     public void onResume() {
         super.onResume();
         Immersive.apply(this, ShellBar.isNight(this));
     }
+
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -75,11 +86,13 @@ public class MainActivity extends BridgeActivity {
         } catch (Throwable ignored) {}
         evalJs("window.dispatchEvent(new Event('cauc:native-theme'))");
     }
+
     @Override
     public void onDestroy() {
         ShellBar.current = null;
         super.onDestroy();
     }
+
     private void evalJs(final String js) {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {

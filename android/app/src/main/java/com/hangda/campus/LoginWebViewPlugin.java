@@ -1,8 +1,11 @@
 package com.hangda.campus;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.webkit.CookieManager;
+
 import androidx.activity.result.ActivityResult;
+
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -10,10 +13,13 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+
 import java.util.ArrayList;
 import java.util.List;
+
 @CapacitorPlugin(name = "LoginWebView")
 public class LoginWebViewPlugin extends Plugin {
+
     @PluginMethod
     public void openPost(PluginCall call) {
         String url = call.getString("url");
@@ -40,12 +46,14 @@ public class LoginWebViewPlugin extends Plugin {
         intent.putExtra(LoginWebViewActivity.EXTRA_URL, url);
         intent.putExtra(LoginWebViewActivity.EXTRA_POST_DATA, sb.toString());
         intent.putExtra(LoginWebViewActivity.EXTRA_TITLE, call.getString("title", "支付"));
-        intent.putExtra(LoginWebViewActivity.EXTRA_BROWSE, true);   
+        intent.putExtra(LoginWebViewActivity.EXTRA_BROWSE, true);
+        intent.putExtra(LoginWebViewActivity.EXTRA_PAY, true);
         startActivityForResult(call, intent, "handleLoginResult");
     }
+
     @PluginMethod
     public void downloadToDownloads(PluginCall call) {
-        String url = call.getString("url");
+        String url = normalizeUrl(call.getString("url"));
         if (url == null || url.length() == 0) { call.reject("url is required"); return; }
         String filename = call.getString("filename");
         JSObject fields = call.getObject("fields");
@@ -78,9 +86,26 @@ public class LoginWebViewPlugin extends Plugin {
             call.reject("download-failed", e.getMessage());
         }
     }
+
+
+    private static String normalizeUrl(String u) {
+        if (u == null) return null;
+        String s = u.trim();
+        int i = s.indexOf("://");
+        int authStart = (i < 0) ? 0 : i + 3;
+        int pathStart = s.indexOf('/', authStart);
+        if (pathStart < 0) return s;
+        int end = s.length();
+        int q = s.indexOf('?', pathStart); if (q >= 0) end = Math.min(end, q);
+        int h = s.indexOf('#', pathStart); if (h >= 0) end = Math.min(end, h);
+        String head = s.substring(0, pathStart);
+        String path = s.substring(pathStart, end).replaceAll("/{2,}", "/");
+        return head + path + s.substring(end);
+    }
+
     @PluginMethod
     public void open(PluginCall call) {
-        String url = call.getString("url");
+        String url = normalizeUrl(call.getString("url"));
         if (url == null || url.length() == 0) {
             call.reject("url is required");
             return;
@@ -90,6 +115,7 @@ public class LoginWebViewPlugin extends Plugin {
         Intent intent = new Intent(actO, LoginWebViewActivity.class);
         intent.putExtra(LoginWebViewActivity.EXTRA_URL, url);
         intent.putExtra(LoginWebViewActivity.EXTRA_TITLE, call.getString("title", "登录"));
+
         JSArray arr = call.getArray("domains");
         List<String> ds = new ArrayList<String>();
         if (arr != null) {
@@ -105,10 +131,16 @@ public class LoginWebViewPlugin extends Plugin {
         intent.putExtra(LoginWebViewActivity.EXTRA_PWD, call.getString("pwd", ""));
         intent.putExtra(LoginWebViewActivity.EXTRA_AUTO, call.getBoolean("auto", false));
         intent.putExtra(LoginWebViewActivity.EXTRA_BROWSE, call.getBoolean("browse", false));
-        intent.putExtra(LoginWebViewActivity.EXTRA_MAP_CAMPUS, call.getBoolean("mapCampus", false));
+        Boolean mcOpt = call.getBoolean("mapCampus");
+        if (mcOpt != null) {
+            intent.putExtra(LoginWebViewActivity.EXTRA_MAP_CAMPUS, mcOpt.booleanValue());
+        }
+        intent.putExtra(LoginWebViewActivity.EXTRA_AUTO_EVAL, call.getBoolean("autoEval", false));
         intent.putExtra(LoginWebViewActivity.EXTRA_FALLBACK_URL, call.getString("fallbackUrl", ""));
+
         startActivityForResult(call, intent, "handleLoginResult");
     }
+
     @ActivityCallback
     private void handleLoginResult(PluginCall call, ActivityResult result) {
         if (call == null) return;
@@ -126,6 +158,7 @@ public class LoginWebViewPlugin extends Plugin {
         }
         call.resolve(ret);
     }
+
     private static final String SILENT_PREFILL_JS =
         "(function(u,p){" +
         "  function fire(el){['input','change','keyup','blur'].forEach(function(t){try{el.dispatchEvent(new Event(t,{bubbles:true}));}catch(e){}});}" +
@@ -144,6 +177,7 @@ public class LoginWebViewPlugin extends Plugin {
         "  if(pEl&&p&&pEl!==uEl&&!pEl.value){setVal(pEl,p);}" +
         "  return (uEl?('u'+(String(uEl.value||'').length)):'-')+'/'+(pEl?('p'+(String(pEl.value||'').length)):'-');" +
         "})(%s,%s)";
+
     private static final String SILENT_SUBMIT_JS =
         "(function(){try{" +
         "  function vis(el){try{var r=el.getBoundingClientRect();return r.width>0&&r.height>0;}catch(e){return false;}}" +
@@ -164,6 +198,7 @@ public class LoginWebViewPlugin extends Plugin {
         "  if(f&&!f.__autoSubmitted){f.__autoSubmitted=true;try{if(f.requestSubmit){f.requestSubmit();}else{f.submit();}return 'form';}catch(e){}}" +
         "  return 'nobtn';" +
         "}catch(e){return 'err';}})()";
+
     private static final String REJECT_JS =
         "(function(){try{var t=document.body?String(document.body.innerText||''):'';" +
         "if(t.length>4000)t=t.slice(0,4000);" +
@@ -171,6 +206,7 @@ public class LoginWebViewPlugin extends Plugin {
         "var hit=/仅限[^。]{0,10}校外使用|访问权限提示|不允许登录|无权访问该系统|请通过.{0,10}学校主页/.test(t);" +
         "return (hit&&!hasForm)?'1':'0';" +
         "}catch(e){return '0';}})()";
+
     @PluginMethod
     public void setCookie(final PluginCall call) {
         String url = call.getString("url", "https://webvpn.cauc.edu.cn/");
@@ -183,17 +219,21 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("ok", ok);
         call.resolve(ret);
     }
+
+
     @Override
     public void load() {
         super.load();
         try { CookieHub.init(getContext()); } catch (Exception ignored) {}
     }
+
     @PluginMethod
     public void hubHeader(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("cookie", CookieHub.headerFor(call.getString("url", "")));
         call.resolve(ret);
     }
+
     @PluginMethod
     public void hubIngest(PluginCall call) {
         String url = call.getString("url", "");
@@ -210,17 +250,20 @@ public class LoginWebViewPlugin extends Plugin {
         CookieHub.ingest(url, list);
         call.resolve();
     }
+
     @PluginMethod
     public void hubDump(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("cookies", CookieHub.dump(call.getString("domain", null)));
         call.resolve(ret);
     }
+
     @PluginMethod
     public void hubClear(PluginCall call) {
         CookieHub.clearAll();
         call.resolve();
     }
+
     @PluginMethod
     public void setMapCampus(PluginCall call) {
         LoginWebViewActivity.setMapCampusGlobal(call.getBoolean("on", false));
@@ -229,6 +272,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("on", call.getBoolean("on", false));
         call.resolve(ret);
     }
+
     @PluginMethod
     public void hubSyncToWebView(PluginCall call) {
         android.webkit.CookieManager cm = android.webkit.CookieManager.getInstance();
@@ -257,6 +301,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("count", n);
         call.resolve(ret);
     }
+
     @PluginMethod
     public void clearWebvpnCookies(final PluginCall call) {
         android.webkit.CookieManager cm = android.webkit.CookieManager.getInstance();
@@ -316,6 +361,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("cleared", cleared);
         call.resolve(ret);
     }
+
     @PluginMethod
     public void silentLogin(final PluginCall call) {
         final String url = call.getString("url", "https://webvpn.cauc.edu.cn/");
@@ -323,6 +369,7 @@ public class LoginWebViewPlugin extends Plugin {
         final String pwd = call.getString("pwd", "");
         final int timeoutMs = call.getInt("timeout", 35000);
         final PluginCall c = call;
+
         final android.app.Activity actSL = getActivity();
         if (actSL == null) { call.reject("activity-gone"); return; }
         actSL.runOnUiThread(new Runnable() {
@@ -336,12 +383,14 @@ public class LoginWebViewPlugin extends Plugin {
                     wv.getSettings().setUserAgentString(
                         wv.getSettings().getUserAgentString() + "lantuMobilecampus lantuMC");
                     try { android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true); } catch (Exception ignored) {}
+
                     final boolean[] done = { false };
                     final boolean[] submitted = { false };
                     final int[] submitCount = { 0 };
                     final long[] lastSubmitAt = { 0L };
                     final boolean[] loggedHint = { false };
                     final android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+
                     final Runnable finishOk = new Runnable() {
                         @Override public void run() {
                             if (done[0]) return;
@@ -355,6 +404,7 @@ public class LoginWebViewPlugin extends Plugin {
                             c.resolve(ret);
                         }
                     };
+
                     final Runnable poll = new Runnable() {
                         @Override public void run() {
                             if (done[0]) return;
@@ -419,9 +469,11 @@ public class LoginWebViewPlugin extends Plugin {
                             h.postDelayed(this, 600);
                         }
                     };
+
                     wv.setWebViewClient(new android.webkit.WebViewClient() {
                         @Override public void onPageFinished(android.webkit.WebView view, String u) {
                             android.util.Log.i("CaucSilent", "[onPageFinished] " + u);
+                            h.removeCallbacks(poll);
                             h.postDelayed(poll, 500);
                         }
                         @Override public void onReceivedHttpError(android.webkit.WebView view,
@@ -456,7 +508,9 @@ public class LoginWebViewPlugin extends Plugin {
                             } catch (Exception ignored) {}
                         }
                     });
+
                     wv.loadUrl(url);
+                    h.removeCallbacks(poll);
                     h.postDelayed(poll, 500);
                     h.postDelayed(new Runnable() {
                         @Override public void run() {
@@ -476,6 +530,7 @@ public class LoginWebViewPlugin extends Plugin {
             }
         });
     }
+
     @PluginMethod
     public void silent(final PluginCall call) {
         final String url = call.getString("url");
@@ -577,6 +632,7 @@ public class LoginWebViewPlugin extends Plugin {
             }
         });
     }
+
     @PluginMethod
     public void cookies(PluginCall call) {
         JSObject ret = new JSObject();
@@ -592,6 +648,7 @@ public class LoginWebViewPlugin extends Plugin {
         }
         call.resolve(ret);
     }
+
     @PluginMethod
     public void clear(PluginCall call) {
         try {
@@ -603,6 +660,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("ok", true);
         call.resolve(ret);
     }
+
     @PluginMethod
     public void resetCookies(PluginCall call) {
         JSObject ret = new JSObject();
@@ -643,6 +701,7 @@ public class LoginWebViewPlugin extends Plugin {
         }
         call.resolve(ret);
     }
+
     @PluginMethod
     public void followChain(final PluginCall call) {
         new Thread(new Runnable() {
@@ -664,7 +723,7 @@ public class LoginWebViewPlugin extends Plugin {
             while (System.currentTimeMillis() < deadline && hops < maxHops) {
                 java.net.URL u = new java.net.URL(finalUrl);
                 conn = (java.net.HttpURLConnection) u.openConnection();
-                conn.setInstanceFollowRedirects(false);   
+                conn.setInstanceFollowRedirects(false);
                 conn.setConnectTimeout(8000);
                 conn.setReadTimeout(8000);
                 conn.setRequestProperty("User-Agent",
@@ -698,14 +757,14 @@ public class LoginWebViewPlugin extends Plugin {
                     finalUrl = new java.net.URL(new java.net.URL(finalUrl), loc).toString();
                     continue;
                 }
-                break;   
+                break;
             }
             ret.put("ok", true);
             ret.put("status", status);
             ret.put("hops", hops);
             ret.put("finalUrl", finalUrl);
             ret.put("bodySample", body.substring(0, Math.min(500, body.length())));
-            if (full) ret.put("body", body);   
+            if (full) ret.put("body", body);
             ret.put("arrived", body.contains("课表") || body.contains("xskbcx")
                     || finalUrl.contains("xskbcx") || finalUrl.contains("TimeTable"));
         } catch (Throwable e) {
@@ -714,9 +773,10 @@ public class LoginWebViewPlugin extends Plugin {
         }
         if (conn != null) { try { conn.disconnect(); } catch (Exception ignored) {} }
         call.resolve(ret);
-        }   
-    }).start();   
+        }
+    }).start();
     }
+
     @PluginMethod
     public void setShellBar(PluginCall call) {
         final String title = call.getString("title", "");
@@ -738,6 +798,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("ok", true);
         call.resolve(ret);
     }
+
     @PluginMethod
     public void restore(PluginCall call) {
         int n = 0;
@@ -747,6 +808,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("count", n);
         call.resolve(ret);
     }
+
     @PluginMethod
     public void vaultSave(PluginCall call) {
         String url = call.getString("url", "");
@@ -766,6 +828,7 @@ public class LoginWebViewPlugin extends Plugin {
         }
         call.resolve(ret);
     }
+
     @PluginMethod
     public void isSystemDark(PluginCall call) {
         int mask = getContext().getResources().getConfiguration().uiMode
@@ -774,6 +837,7 @@ public class LoginWebViewPlugin extends Plugin {
         ret.put("dark", mask == android.content.res.Configuration.UI_MODE_NIGHT_YES);
         call.resolve(ret);
     }
+
     @PluginMethod
     public void setDarkMode(PluginCall call) {
         Boolean b = call.getBoolean("dark", false);
@@ -800,6 +864,7 @@ public class LoginWebViewPlugin extends Plugin {
             call.reject(String.valueOf(e));
         }
     }
+
     @PluginMethod
     public void netInfo(PluginCall call) {
         JSObject ret = new JSObject();
@@ -811,6 +876,7 @@ public class LoginWebViewPlugin extends Plugin {
                     (active == null || cm == null) ? null : cm.getNetworkCapabilities(active);
             android.net.LinkProperties lp =
                     (active == null || cm == null) ? null : cm.getLinkProperties(active);
+
             String type = "none", iface = "", gateway = "";
             if (nc != null) {
                 if (nc.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)) type = "vpn";
@@ -828,6 +894,7 @@ public class LoginWebViewPlugin extends Plugin {
                     if (gw6.length() == 0) gw6 = g.getHostAddress();
                 }
                 gateway = (gw4.length() > 0) ? gw4 : gw6;
+
                 JSArray dns = new JSArray(), dns6 = new JSArray();
                 for (java.net.InetAddress d : lp.getDnsServers()) {
                     if (d == null) continue;
@@ -845,6 +912,7 @@ public class LoginWebViewPlugin extends Plugin {
                     }
                 }
             }
+
             JSArray ips = new JSArray();
             java.util.Enumeration<java.net.NetworkInterface> ifs =
                     java.net.NetworkInterface.getNetworkInterfaces();
@@ -863,6 +931,7 @@ public class LoginWebViewPlugin extends Plugin {
                 }
             }
             ret.put("ips", ips);
+
             ret.put("type", type);
             ret.put("iface", iface);
             ret.put("gateway", gateway);

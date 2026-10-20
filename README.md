@@ -5,7 +5,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%207.0%2B-green">
   <img alt="Ads" src="https://img.shields.io/badge/%E5%B9%BF%E5%91%8A-%E6%97%A0-success">
   <img alt="Data" src="https://img.shields.io/badge/%E6%95%B0%E6%8D%AE%E4%B8%8A%E4%BC%A0-%E6%97%A0-success">
-  <a href="https://github.com/DE3PDARKFANTASY/cauc-campus-app/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/DE3PDARKFANTASY/cauc-campus-app?style=social"></a>
+  <a href="https://github.com/DE3PDARKFANTASY/cauc-campus-assistant/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/DE3PDARKFANTASY/cauc-campus-assistant?style=social"></a>
 </p>
 
 一款为中国民航大学在校生打造的**第三方、开源、无广告**校园助手 App。课程表、考试、空教室、校园网、宿舍电费、校园卡，一站式搞定；账号密码只存在你自己的手机里。
@@ -63,8 +63,9 @@
 
 ## 📥 下载安装
 
-- **Release**（推荐）：前往 [Releases](https://github.com/DE3PDARKFANTASY/cauc-campus-app/releases) 下载最新 APK，安装即用（要求 Android 7.0 及以上）
-- **自行构建**：克隆本仓库，用 Android Studio 打开 `android/` 目录构建
+- **Release**（推荐）：前往 [Releases](https://github.com/DE3PDARKFANTASY/cauc-campus-assistant/releases) 下载最新 APK，安装即用（要求 Android 7.0 及以上）
+- **当前版本**：`1.0.1`（versionCode 2）
+- **自行构建**：克隆本仓库，用 Android Studio 打开 `android/` 目录构建（未提供签名密钥，release 会自动退回 debug 签名）
 
 > 首次使用需要你的**学号 + 统一身份认证密码**。密码仅用于登录学校系统，只保存在本机；你也可以选择不保存，每次手动输入。
 
@@ -182,7 +183,7 @@ GNU 通用公共许可证（第 3 版或你选择的更新版本）
 
 如果这个项目对你有帮助，欢迎点一个 Star ⭐ —— 这是给独立开发者最直接的支持。
 
-[![Star History Chart](https://api.star-history.com/svg?repos=DE3PDARKFANTASY/cauc-campus-app&type=Date)](https://star-history.com/#DE3PDARKFANTASY/cauc-campus-app&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=DE3PDARKFANTASY/cauc-campus-assistant&type=Date)](https://star-history.com/#DE3PDARKFANTASY/cauc-campus-assistant&Date)
 
 ---
 

@@ -1,33 +1,46 @@
 package com.hangda.campus;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
+
 public final class CookieHub {
+
     public static class Cookie {
         public String name, value, domain, path = "/";
-        public long expires = -1;      
+        public long expires = -1;
         public boolean httpOnly = false, secure = false;
-        public String raw = "";        
+        public String raw = "";
     }
+
     private static final String PREF = "cookie_hub_v1";
+    private static final String CANON_WV_DOMAIN = "cauc.edu.cn";
     private static Context ctx;
     private static final Map<String, Map<String, Cookie>> JAR = new ConcurrentHashMap<>();
+
     private static boolean allowedDomain(String d) {
         if (d == null) return false;
         String s = d.startsWith(".") ? d.substring(1) : d;
+        if (s.length() > 1 && s.charAt(0) == '[' && s.charAt(s.length() - 1) == ']') {
+            s = s.substring(1, s.length() - 1);
+        }
         s = s.toLowerCase();
         return s.equals("cauc.edu.cn") || s.endsWith(".cauc.edu.cn")
                 || s.equals("192.168.100.200")
                 || s.equals("2001:da8:a012:ff09::3");
     }
+
     private CookieHub() {}
+
     public static synchronized void init(Context c) {
         if (c == null) return;
         ctx = c.getApplicationContext();
@@ -50,7 +63,7 @@ public final class CookieHub {
                 ck.secure = o.optBoolean("s", false);
                 ck.raw = o.optString("r", "");
                 if (ck.expires >= 0 && ck.expires < System.currentTimeMillis()) {
-                    dirty = true;    
+                    dirty = true;
                     continue;
                 }
                 putInternal(ck);
@@ -58,6 +71,7 @@ public final class CookieHub {
         }
         if (dirty) persist();
     }
+
     public static long jwtJti(String value) {
         try {
             if (value == null) return -1;
@@ -74,6 +88,18 @@ public final class CookieHub {
             return -1;
         }
     }
+
+    private static boolean isWvFamily(String h) {
+        if (h == null) return false;
+        String s = h.startsWith(".") ? h.substring(1) : h;
+        s = s.toLowerCase();
+        return s.equals("webvpn.cauc.edu.cn") || s.endsWith(".webvpn.cauc.edu.cn");
+    }
+
+    private static boolean isGatewayToken(String name) {
+        return "webvpn-token".equals(name);
+    }
+
     private static void putInternal(Cookie ck) {
         if (ck.domain == null || ck.name == null) return;
         String d = ck.domain.startsWith(".") ? ck.domain.substring(1) : ck.domain;
@@ -81,26 +107,38 @@ public final class CookieHub {
         String key = d.toLowerCase();
         if ("webvpn-token".equals(ck.name)) {
             boolean blank = ck.value == null || ck.value.isEmpty();
-            if (!blank) {
-                long mine = jwtJti(ck.value);
+            if (blank) {
                 for (Map.Entry<String, Map<String, Cookie>> e : JAR.entrySet()) {
-                    if (e.getKey().equals(key)) continue;
-                    Cookie old = e.getValue().get("webvpn-token");
-                    if (old == null || old.value == null || old.value.isEmpty()) continue;
-                    long theirs = jwtJti(old.value);
-                    if (theirs >= 0 && mine >= 0 && theirs > mine) {
-                        return;
-                    }
                     e.getValue().remove("webvpn-token");
                 }
+                return;
             }
+            long mine = jwtJti(ck.value);
+            for (Map.Entry<String, Map<String, Cookie>> e : JAR.entrySet()) {
+                Cookie old = e.getValue().get("webvpn-token");
+                if (old == null || old.value == null || old.value.isEmpty()) continue;
+                long theirs = jwtJti(old.value);
+                if (theirs >= 0 && mine >= 0 && theirs > mine) {
+                    return;
+                }
+                e.getValue().remove("webvpn-token");
+            }
+            ck.domain = CANON_WV_DOMAIN;
+            ck.path = "/";
+            JAR.computeIfAbsent(CANON_WV_DOMAIN, k -> new ConcurrentHashMap<>()).put(ck.name, ck);
+            return;
         }
-        JAR.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).put(ck.name, ck);
+        Map<String, Cookie> bucket = JAR.computeIfAbsent(key, k -> new ConcurrentHashMap<>());
+        Cookie exist = bucket.get(ck.name);
+        if (exist != null && exist.value != null && exist.value.equals(ck.value)) return;
+        bucket.put(ck.name, ck);
     }
+
     public static synchronized void put(Cookie ck) {
         putInternal(ck);
         persist();
     }
+
     public static synchronized void ingest(String requestUrl, java.util.List<String> setCookieHeaders) {
         if (requestUrl == null || setCookieHeaders == null || setCookieHeaders.isEmpty()) return;
         String host = "";
@@ -140,6 +178,7 @@ public final class CookieHub {
                         ck.secure = true;
                     }
                 }
+                if (!isGatewayToken(ck.name)) ck.domain = host.toLowerCase();
                 if (!allowedDomain(ck.domain)) continue;
                 boolean expired = ck.expires >= 0 && ck.expires < System.currentTimeMillis();
                 if ("deleted".equalsIgnoreCase(ck.value) && ck.expires < 0) expired = true;
@@ -153,16 +192,19 @@ public final class CookieHub {
         }
         if (changed) persist();
     }
+
     public static synchronized void remove(String domain, String name) {
         removeInternal(domain, name);
         persist();
     }
+
     private static void removeInternal(String domain, String name) {
         if (domain == null || name == null) return;
         String d = (domain.startsWith(".") ? domain.substring(1) : domain).toLowerCase();
         Map<String, Cookie> m = JAR.get(d);
         if (m != null) m.remove(name);
     }
+
     public static synchronized String headerFor(String url) {
         String host = "", path = "/";
         try {
@@ -174,10 +216,13 @@ public final class CookieHub {
         host = host.toLowerCase();
         if (path == null || path.isEmpty()) path = "/";
         java.util.LinkedHashMap<String, Cookie> picked = new java.util.LinkedHashMap<>();
+        final boolean hostWv = isWvFamily(host);
         for (Map.Entry<String, Map<String, Cookie>> e : JAR.entrySet()) {
             String d = e.getKey();
             if (!(host.equals(d) || host.endsWith("." + d))) continue;
+            final boolean dWv = isWvFamily(d);
             for (Cookie ck : e.getValue().values()) {
+                if (!isGatewayToken(ck.name) && hostWv != dWv) continue;
                 if (ck.expires >= 0 && ck.expires < System.currentTimeMillis()) continue;
                 if (!path.startsWith(ck.path == null || ck.path.isEmpty() ? "/" : ck.path)) continue;
                 if (ck.value == null || ck.value.isEmpty()) continue;
@@ -186,8 +231,7 @@ public final class CookieHub {
                     picked.put(ck.name, ck);
                     continue;
                 }
-                long a = jwtJti(prev.value), b = jwtJti(ck.value);
-                if (a >= 0 && b >= 0 && b > a) picked.put(ck.name, ck);
+                if (betterCookie(ck, prev)) picked.put(ck.name, ck);
             }
         }
         StringBuilder sb = new StringBuilder();
@@ -197,6 +241,21 @@ public final class CookieHub {
         }
         return sb.toString();
     }
+
+    private static boolean betterCookie(Cookie ck, Cookie prev) {
+        if (ck == null) return false;
+        if (prev == null) return true;
+        long a = jwtJti(prev.value), b = jwtJti(ck.value);
+        if (a >= 0 && b >= 0 && a != b) return b > a;
+        String pp = (prev.path == null || prev.path.isEmpty()) ? "/" : prev.path;
+        String cp = (ck.path == null || ck.path.isEmpty()) ? "/" : ck.path;
+        if (cp.length() != pp.length()) return cp.length() > pp.length();
+        String pd = prev.domain == null ? "" : prev.domain;
+        String cd = ck.domain == null ? "" : ck.domain;
+        if (cd.length() != pd.length()) return cd.length() > pd.length();
+        return (cd + "|" + cp).compareTo(pd + "|" + pp) > 0;
+    }
+
     public static synchronized JSONArray dump(String domainFilter) {
         JSONArray arr = new JSONArray();
         for (Map.Entry<String, Map<String, Cookie>> e : JAR.entrySet()) {
@@ -218,10 +277,12 @@ public final class CookieHub {
         }
         return arr;
     }
+
     public static synchronized void clearAll() {
         JAR.clear();
         persist();
     }
+
     private static synchronized void persist() {
         if (ctx == null) return;
         try {
@@ -245,6 +306,7 @@ public final class CookieHub {
             ed.apply();
         } catch (Exception ignored) {}
     }
+
     private static long parseHttpDate(String v) {
         if (v == null || v.isEmpty()) return -1;
         String[] fmts = {

@@ -1,10 +1,12 @@
 package com.hangda.campus;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.webkit.CookieManager;
+
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,8 +15,11 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 public final class Downloads {
+
   private Downloads() {}
+
   public static final class Result {
     public final String path;
     public final long bytes;
@@ -25,12 +30,18 @@ public final class Downloads {
       this.mime = mime;
     }
   }
+
   public static String guessName(String url, String contentDisposition) {
     String name = null;
     if (contentDisposition != null) {
       Matcher m = Pattern.compile("filename\\*?=(?:UTF-8'')?\"?([^\";]+)\"?", Pattern.CASE_INSENSITIVE)
           .matcher(contentDisposition);
-      if (m.find()) name = m.group(1).trim();
+      if (m.find()) {
+        name = m.group(1).trim();
+        if (contentDisposition.toLowerCase(java.util.Locale.US).contains("filename*=")) {
+          try { name = URLDecoder.decode(name, "UTF-8"); } catch (Exception ignored) {}
+        }
+      }
     }
     if (name == null || name.length() == 0) {
       String p = url.split("\\?")[0];
@@ -41,19 +52,22 @@ public final class Downloads {
     if (name == null || name.length() == 0) name = "download_" + System.currentTimeMillis();
     return name;
   }
+
   public static Result save(Context ctx, String url, String filename) throws Exception {
     return save(ctx, url, filename, null);
   }
+
   public static Result save(Context ctx, String url, String filename, String postBody) throws Exception {
     CookieManager cm = CookieManager.getInstance();
     String current = url;
+    String body = postBody;
     HttpURLConnection conn = null;
     int hops = 0;
     while (true) {
-      conn = open(current, cm.getCookie(current), postBody != null);
-      if (postBody != null) {
+      conn = open(current, cm.getCookie(current), body != null);
+      if (body != null) {
         conn.setDoOutput(true);
-        byte[] ob = postBody.getBytes("UTF-8");
+        byte[] ob = body.getBytes("UTF-8");
         java.io.OutputStream ops = conn.getOutputStream();
         ops.write(ob);
         ops.flush();
@@ -65,6 +79,7 @@ public final class Downloads {
         conn.disconnect();
         if (loc == null || loc.length() == 0) throw new Exception("HTTP " + code + " 无跳转地址");
         current = new URL(new URL(current), loc).toString();
+        if (code != 307 && code != 308) body = null;
         if (++hops > 6) throw new Exception("重定向次数过多");
         continue;
       }
@@ -78,10 +93,12 @@ public final class Downloads {
     String disp = conn.getHeaderField("Content-Disposition");
     if (filename == null || filename.length() == 0) filename = guessName(current, disp);
     filename = filename.replaceAll("[\\\\/:*?\"<>|\r\n]", "_");
+
     if (Build.VERSION.SDK_INT < 29) {
       try { conn.disconnect(); } catch (Exception ignored) {}
       throw new Exception("Android 10 以下暂不支持应用内下载");
     }
+
     InputStream in = null;
     OutputStream os = null;
     Uri uri = null;
@@ -116,18 +133,23 @@ public final class Downloads {
       try { conn.disconnect(); } catch (Exception ignored) {}
     }
   }
+
   private static HttpURLConnection open(String url, String cookie) throws Exception {
     return open(url, cookie, false);
   }
+
   private static HttpURLConnection open(String url, String cookie, boolean isPost) throws Exception {
     HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
     c.setConnectTimeout(15000);
     c.setReadTimeout(60000);
-    c.setInstanceFollowRedirects(false);   
+    c.setInstanceFollowRedirects(false);
     c.setRequestMethod(isPost ? "POST" : "GET");
     c.setRequestProperty("User-Agent",
         System.getProperty("http.agent", "Mozilla/5.0 (Linux; Android) AppleWebKit/537.36"));
     if (cookie != null && cookie.length() > 0) c.setRequestProperty("Cookie", cookie);
+    if (isPost) {
+      c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+    }
     return c;
   }
 }

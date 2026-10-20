@@ -1,17 +1,23 @@
 package com.hangda.campus;
+
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+
 public final class Immersive {
+
     private Immersive() {}
+
     private static int dp(Activity act, int v) {
         return Math.round(act.getResources().getDisplayMetrics().density * v);
     }
+
     private static void forceNoFits(ViewGroup vg) {
         if (vg == null) return;
         vg.setFitsSystemWindows(false);
@@ -21,18 +27,20 @@ public final class Immersive {
             if (c instanceof ViewGroup) forceNoFits((ViewGroup) c);
         }
     }
+
     private static boolean keepInset(View v) {
         return v != null && "cauc-keep-inset".equals(v.getTag());
     }
+
     private static void clearInsetsPadding(ViewGroup vg) {
         if (vg == null) return;
-        if (keepInset(vg)) return;              
+        if (keepInset(vg)) return;
         vg.setFitsSystemWindows(false);
         if (vg.getPaddingBottom() != 0) vg.setPadding(vg.getPaddingLeft(), vg.getPaddingTop(),
                 vg.getPaddingRight(), 0);
         for (int i = 0; i < vg.getChildCount(); i++) {
             View c = vg.getChildAt(i);
-            if (keepInset(c)) continue;         
+            if (keepInset(c)) continue;
             c.setFitsSystemWindows(false);
             if (c.getPaddingBottom() != 0) {
                 c.setPadding(c.getPaddingLeft(), c.getPaddingTop(), c.getPaddingRight(), 0);
@@ -40,8 +48,11 @@ public final class Immersive {
             if (c instanceof ViewGroup) clearInsetsPadding((ViewGroup) c);
         }
     }
+
     private static final int BRAND = Color.parseColor("#0B3D91");
+
     public static final int DARK_BG = 0xFF111827;
+
     public static void apply(final Activity act, final boolean dark) {
         if (act == null) return;
         applyNow(act, dark);
@@ -56,6 +67,7 @@ public final class Immersive {
             }, 400);
         } catch (Throwable ignored) {}
     }
+
     public static void applyEdgeToEdge(final Activity act) {
         if (act == null) return;
         applyEdgeNow(act);
@@ -70,6 +82,7 @@ public final class Immersive {
             }, 400);
         } catch (Throwable ignored) {}
     }
+
     private static void applyEdgeNow(Activity act) {
         final boolean dark = ShellBar.isNight(act);
         try {
@@ -87,6 +100,7 @@ public final class Immersive {
             } catch (Throwable ignored) {}
         } catch (Throwable ignored) {}
     }
+
     public static void addStatusStrip(final Activity act, final int color) {
         if (act == null) return;
         try {
@@ -107,6 +121,7 @@ public final class Immersive {
             strip.setTag("cauc-status-strip");
         } catch (Throwable ignored) {}
     }
+
     private static void applyNow(Activity act, boolean dark) {
         final boolean lightIcons = !dark;
         try {

@@ -10,7 +10,6 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
 
-        
         <activity
             android:name=".LoginWebViewActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
@@ -44,9 +43,7 @@
         </provider>
     </application>
 
-    
 
     <uses-permission android:name="android.permission.INTERNET" />
-    
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 </manifest>

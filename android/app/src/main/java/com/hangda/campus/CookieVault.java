@@ -1,33 +1,42 @@
 package com.hangda.campus;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.webkit.CookieManager;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+
 public final class CookieVault {
+
     private static final String PREF = "cauc_cookie_vault";
-    private static final long KEEP_MS = 12L * 3600 * 1000; 
+    private static final long KEEP_MS = 12L * 3600 * 1000;
+
     private CookieVault() {}
+
     private static String httpDate(long ms) {
         SimpleDateFormat f = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
         f.setTimeZone(TimeZone.getTimeZone("GMT"));
         return f.format(new Date(ms));
     }
+
     private static boolean isAttr(String name) {
         return name.equalsIgnoreCase("path") || name.equalsIgnoreCase("domain")
                 || name.equalsIgnoreCase("expires") || name.equalsIgnoreCase("max-age")
                 || name.equalsIgnoreCase("httponly") || name.equalsIgnoreCase("secure")
                 || name.equalsIgnoreCase("samesite") || name.equalsIgnoreCase("version");
     }
+
     public static void save(Context ctx, String domain, String cookieString) {
         if (ctx == null || domain == null) return;
         if (cookieString == null || cookieString.length() == 0) return;
         ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
                 .edit().putString(domain, cookieString).apply();
     }
+
     public static int dropName(Context ctx, String name) {
         if (ctx == null || name == null || name.length() == 0) return 0;
         SharedPreferences sp = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE);
@@ -57,11 +66,13 @@ public final class CookieVault {
         if (changed) ed.apply();
         return hit;
     }
+
     public static int restore(Context ctx) {
         if (ctx == null) return 0;
         SharedPreferences sp = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE);
         CookieManager cm = CookieManager.getInstance();
         try { cm.setAcceptCookie(true); } catch (Exception ignored) {}
+
         String expStr = httpDate(System.currentTimeMillis() + KEEP_MS);
         int n = 0;
         for (Map.Entry<String, ?> e : sp.getAll().entrySet()) {
@@ -87,6 +98,7 @@ public final class CookieVault {
         try { cm.flush(); } catch (Exception ignored) {}
         return n;
     }
+
     public static void clear(Context ctx) {
         if (ctx == null) return;
         ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit().clear().apply();
