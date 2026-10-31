@@ -1,13 +1,7 @@
-/* ============================================================
-   航大校园 · 设计系统
-   浅色主题 / 移动端优先 / 蓝色学术风
-   ============================================================ */
 :root{
   --brand:#0b3d91;
   --brand-2:#1e6fd9;
   --brand-soft:#e8f0fe;
-  /* ★2026-09-24 配色对调（用户要求）：
-     页面背景 → 纯白；卡片 → 原来的背景色（浅灰蓝），白底上更干净 */
   --bg:#ffffff;
   --card:#f2f5fa;
   --text:#141a24;
@@ -40,16 +34,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 input,select{font-family:inherit}
 a{color:var(--brand-2);text-decoration:none}
 
-/* ---------- 启动页 ---------- */
 
-/* ---------- App 外壳 ---------- */
 .app{
   max-width:520px;margin:0 auto;min-height:100vh;
   background:var(--bg);position:relative;display:flex;flex-direction:column;
 }
-/* ★顶栏统一高度 56px：与内置页(LoginWebViewActivity)顶栏完全一致。
-   用固定 height + flex 居中，比原先「上下 padding 各 12px」更可控、更统一。
-   状态栏本身已是品牌蓝，顶栏紧贴其下 → 视觉上连成一片。 */
 .appbar{
   position:sticky;top:0;z-index:50;
   background:var(--brand);color:#fff;
@@ -58,9 +47,6 @@ a{color:var(--brand-2);text-decoration:none}
   display:flex;align-items:center;gap:10px;
   box-shadow:0 2px 12px rgba(11,61,145,.22);
 }
-/* ★返回键：与内置 WebView 顶栏的 ✕/↻ 完全同规格 ——
-   40px 圆角方盒 + 24px 实心矢量图标居中（尺寸与视觉重量一致）。
-   旧实现是 28px 盒 + 一条细描边 chevron，跟另外两个实心图标不是一路风格。 */
 .appbar .ab-back{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(255,255,255,.14);margin-left:-8px;flex:0 0 auto}
 .appbar .ab-back svg{width:24px;height:24px;fill:currentColor;stroke:none;display:block}
 .appbar h1{font-size:17px;font-weight:600;margin:0;flex:1;letter-spacing:.5px}
@@ -71,7 +57,6 @@ a{color:var(--brand-2);text-decoration:none}
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-/* ---------- 底部导航 ---------- */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:60;
   max-width:520px;margin:0 auto;
@@ -88,7 +73,6 @@ a{color:var(--brand-2);text-decoration:none}
 .tabbar .tab svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabbar .tab.active{color:var(--brand-2);font-weight:600}
 
-/* ---------- 通用卡片 ---------- */
 .card{
   background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
   padding:16px;margin-bottom:12px;
@@ -100,18 +84,11 @@ a{color:var(--brand-2);text-decoration:none}
 }
 .section-title .more{font-size:12px;color:var(--muted);font-weight:400}
 
-/* ---------- 首页 Hero ---------- */
-/* ★2026-09-25：顶栏/页面都已改白，首页这块蓝色渐变 hero 成了唯一的"蓝屏"，
-   开屏时非常突兀（用户反馈"开启会闪一下蓝屏"）。改成与新设计一致的浅色卡片。 */
 .hero{
   background:var(--card);
-  /* ★2026-09-25（用户定稿）：内边距 = 背景到大卡片的距离（14px），四边等宽 */
   color:var(--text);border-radius:var(--radius);padding:14px;
   box-shadow:var(--shadow);margin-bottom:14px;position:relative;overflow:hidden;
 }
-/* ★已移除 .hero::after 的白色装饰圆斑（用户要求：首页不要写"光晕"，
-   它在不同机型/圆角裁切下容易露出圆弧边、压到头像或文字，处理不好就穿帮）。
-   现在 hero 只保留干净的渐变底。 */
 .hero .h-row{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
 .hero .h-hello{font-size:20px;font-weight:700;letter-spacing:.5px}
 .hero .h-meta{font-size:12px;color:var(--text-2);margin-top:3px}
@@ -121,7 +98,6 @@ a{color:var(--brand-2);text-decoration:none}
 .hero .h-stat .n{font-size:17px;font-weight:700;color:var(--text)}
 .hero .h-stat .l{font-size:11px;color:var(--muted);margin-top:1px}
 
-/* ---------- 快捷入口 ---------- */
 .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 .quick{
   display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;transition:background .15s;
@@ -130,29 +106,20 @@ a{color:var(--brand-2);text-decoration:none}
 .quick .q-ico{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#fff}
 .quick .q-ico svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .quick .q-label{font-size:11.5px;color:var(--text-2)}
-/* ---------- 图标底色调色板 ----------
-   ★2026-09-29 重排（用户："多轮删增后部分底色相同相近，没初版那么好"）。
-   病根：同一屏内重色 —— 校园网认证 / 校园网信息 都是青；校园卡 / 校园地图 都是绿；
-   我的页 5 项都是靛蓝；且 蓝(#2a72de) 与 靛(#5b7cf0) 本来就是近色。
-   重排原则：① **色相均布**（红4°→橙28°→金45°→黄绿80°→绿152°→青绿174°→天青198°
-   →蓝218°→靛248°→紫282°→玫330°）② 统一"亮→暗"的 135° 渐变幅度与饱和度
-   ③ **同一屏内不重复用色**（九宫格 8 色、服务页 9 色、我的页 10 色）。
-   （m-box 数据块用的是内联渐变，不属于"图标底色"，未动。） */
-.bg-blue{background:linear-gradient(135deg,#2f7bf0,#0b46b8)}     /* 218° 品牌蓝 · 我的课表 / 教务系统 */
-.bg-indigo{background:linear-gradient(135deg,#6d5ff5,#4632cc)}   /* 248° 靛   · 空教室 */
-.bg-violet{background:linear-gradient(135deg,#a855f0,#7c26c9)}   /* 282° 紫   · 绩点学业 */
-.bg-pink{background:linear-gradient(135deg,#ef5fa8,#c62f78)}     /* 330° 玫   （备用） */
-.bg-red{background:linear-gradient(135deg,#f2615a,#d92e26)}      /*   4° 红   · 考试安排 / 退出登录 */
-.bg-orange{background:linear-gradient(135deg,#f58a1f,#d96600)}   /*  28° 橙   （备用） */
-.bg-amber{background:linear-gradient(135deg,#e0a414,#b87c00)}    /*  45° 金   · 宿舍电费 / 已保存账密 */
-.bg-lime{background:linear-gradient(135deg,#7eb01a,#578a00)}     /*  80° 黄绿 · 校园地图 / 数据源 */
-.bg-green{background:linear-gradient(135deg,#1fbf6a,#0d9a4e)}    /* 152° 翠绿 · 校园卡 / 账号安全 */
-.bg-teal{background:linear-gradient(135deg,#14b8a6,#0b8e80)}     /* 174° 青绿 · 校园网认证 */
-.bg-cyan{background:linear-gradient(135deg,#2fb6ec,#0284c7)}     /* 198° 天青 · 校园网信息 / 网络通道 */
-.bg-slate{background:linear-gradient(135deg,#6b7d95,#46586e)}    /* 中性灰蓝 · 深色模式 */
-.bg-purple{background:linear-gradient(135deg,#8b6ce8,#6a45d6)}   /* 兼容保留（旧引用） */
+.bg-blue{background:linear-gradient(135deg,#2f7bf0,#0b46b8)}
+.bg-indigo{background:linear-gradient(135deg,#6d5ff5,#4632cc)}
+.bg-violet{background:linear-gradient(135deg,#a855f0,#7c26c9)}
+.bg-pink{background:linear-gradient(135deg,#ef5fa8,#c62f78)}
+.bg-red{background:linear-gradient(135deg,#f2615a,#d92e26)}
+.bg-orange{background:linear-gradient(135deg,#f58a1f,#d96600)}
+.bg-amber{background:linear-gradient(135deg,#e0a414,#b87c00)}
+.bg-lime{background:linear-gradient(135deg,#7eb01a,#578a00)}
+.bg-green{background:linear-gradient(135deg,#1fbf6a,#0d9a4e)}
+.bg-teal{background:linear-gradient(135deg,#14b8a6,#0b8e80)}
+.bg-cyan{background:linear-gradient(135deg,#2fb6ec,#0284c7)}
+.bg-slate{background:linear-gradient(135deg,#6b7d95,#46586e)}
+.bg-purple{background:linear-gradient(135deg,#8b6ce8,#6a45d6)}
 
-/* ---------- 今日课程 ---------- */
 .today-empty{text-align:center;color:var(--muted);padding:22px 0;font-size:13px}
 .today-empty .big{font-size:34px;margin-bottom:6px;opacity:.35}
 .course-row{
@@ -169,7 +136,6 @@ a{color:var(--brand-2);text-decoration:none}
 .course-row .cr-name{font-size:15px;font-weight:600;margin-bottom:3px}
 .course-row .cr-info{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px}
 
-/* ---------- 课表 ---------- */
 .week-switch{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--card);border-radius:var(--radius);padding:10px 12px;box-shadow:var(--shadow);margin-bottom:12px;
@@ -211,7 +177,6 @@ a{color:var(--brand-2);text-decoration:none}
 .course-block .cb-room{opacity:.9;font-size:9.5px;margin-top:1px}
 .course-block small{opacity:.85}
 
-/* 总课表列表 */
 .all-course{
   display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start;
 }
@@ -226,7 +191,6 @@ a{color:var(--brand-2);text-decoration:none}
 .tag.orange{background:#fdf1de;color:var(--warn)}
 .tag.red{background:#fde8e6;color:var(--danger)}
 
-/* ---------- 列表 / 条目 ---------- */
 .list-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .list-item:last-child{border-bottom:none}
 .list-item .li-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
@@ -237,7 +201,6 @@ a{color:var(--brand-2);text-decoration:none}
 .list-item .li-v{font-size:14px;font-weight:600;color:var(--brand)}
 .chev{color:#c3cbdb;font-size:16px}
 
-/* ---------- 考试 ---------- */
 .exam-card{border-left:4px solid var(--brand-2);background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
 .exam-card .ex-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .exam-card .ex-name{font-size:15.5px;font-weight:600}
@@ -246,20 +209,11 @@ a{color:var(--brand-2);text-decoration:none}
 .exam-card .ex-meta .m{font-size:12.5px;color:var(--text-2);display:flex;gap:6px;align-items:center}
 .exam-card .ex-meta .m svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.9}
 
-/* ---------- 电费 ---------- */
 .meter{display:flex;gap:12px}
 .meter .m-box{flex:1;border-radius:14px;padding:14px;color:#fff}
 .meter .m-box .mt{font-size:12px;opacity:.9;display:flex;align-items:center;gap:5px}
 .meter .m-box .mv{font-size:26px;font-weight:700;margin-top:6px;line-height:1}
 .meter .m-box .mu{font-size:11px;opacity:.85;margin-top:4px}
-/* ★2026-09-30：m-box 里的图标此前**没有任何尺寸/描边规则** →
-   · inline SVG 撑满 flex 容器（实测照明的 bolt 渲染成 111×111）
-   · 且兜底 fill:black、stroke:none → 糊成一个巨大黑块
-   · 更糟：开放路径（如空调「风线条」）没有填充面积，stroke:none 时**完全不可见**
-   ★用户 2026-09-30 定案：**东丽完全复原原貌**（图标撑满 = 原来的大黑块观感，见 app.js 东丽分支）
-     **宁河才用 44px 小图标** → 这条规则挂在 `.meter.sm` 上，只有宁河那格命中。
-   ★线宽按渲染尺寸反推：SVG 等比缩放时 stroke-width 也等比放大，
-     44px 下 1.2 → 实际 1.2×44/24 ≈ 2.2px（若沿用库里的 1.9 会变成 3.5px，偏笨）。 */
 .meter.sm .m-box svg{width:44px;height:44px;flex-shrink:0;stroke-linecap:round;stroke-linejoin:round;
                      fill:none;stroke:currentColor;stroke-width:1.2}
 .bar-track{height:8px;border-radius:8px;background:#eef1f6;overflow:hidden;margin-top:6px}
@@ -268,23 +222,17 @@ a{color:var(--brand-2);text-decoration:none}
 .mini-bars .mb{flex:1;background:linear-gradient(180deg,#7fb0f0,#1e6fd9);border-radius:6px 6px 3px 3px;position:relative;min-height:4px;transition:height .5s ease}
 .mini-bars .mb span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
 
-/* ---------- 校园网 ---------- */
 .net-status{display:flex;align-items:center;gap:12px}
 .net-dot{width:11px;height:11px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(18,161,80,.16)}
 .net-dot.off{background:var(--muted);box-shadow:0 0 0 4px rgba(137,148,168,.16)}
 .kv{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .kv:last-child{border-bottom:none}
 .kv .k{color:var(--muted)}
-/* ★2026-10-12：`.kv` 是 space-between 的 flex，值那一侧原来没有 text-align ——
-   值一旦折成两行（曾用 <br> 放"起止时刻"），第二行就会靠左，看着"没右对齐"。
-   这里显式右对齐；同时给标签一点右间距，避免长短不一时贴在一起。 */
 .kv .v{font-weight:600;font-variant-numeric:tabular-nums;text-align:right;margin-left:12px}
 .kv .v.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
 
-/* ---------- 空教室 ---------- */
 .pill-row{display:flex;flex-wrap:wrap;gap:8px}
 .pill{padding:7px 14px;border-radius:20px;background:#eef1f6;font-size:13px;color:var(--text-2);border:1px solid transparent}
-/* ★空教室周次/节次：固定列数网格（按钮等宽、行列对齐；原 flex 换行会参差不齐） */
 .pill-grid{display:grid;column-gap:8px;row-gap:8px}
 .pill-grid .pill{width:100%;text-align:center;padding:8px 2px;line-height:1.25}
 .pill.on{background:var(--brand-soft);color:var(--brand);border-color:#bcd4f7;font-weight:600}
@@ -293,7 +241,6 @@ a{color:var(--brand-2);text-decoration:none}
 .room .r-n{font-size:14px;font-weight:600}
 .room .r-s{font-size:11px;color:var(--ok);margin-top:3px}
 
-/* ---------- 校历 ---------- */
 .timeline{position:relative;padding-left:22px}
 .timeline::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--line)}
 .tl-item{position:relative;padding-bottom:18px}
@@ -304,7 +251,6 @@ a{color:var(--brand-2);text-decoration:none}
 .tl-item .tl-t{font-size:14px;margin-top:2px}
 .tl-item .tl-s{font-size:12px;color:var(--muted);margin-top:1px}
 
-/* ---------- 校园卡 ---------- */
 .card-balance{
   background:linear-gradient(135deg,#0b3d91,#1e6fd9);color:#fff;border-radius:18px;padding:20px;position:relative;overflow:hidden;
   box-shadow:0 10px 26px rgba(11,61,145,.28);
@@ -321,11 +267,6 @@ a{color:var(--brand-2);text-decoration:none}
 .tx .tx-a.out{color:var(--text)}
 .tx .tx-a.in{color:var(--ok)}
 
-/* ---------- 登录 ---------- */
-/* ★2026-09-25：登录页改成白底 —— 它是 App 里最后一块蓝色老设计。
-   启动时若因 token 失效短暂渲染登录页，原来会闪一帧"中间蓝"（顶栏白/中间蓝/下面白，
-   用户反复反馈）。改成白底后：① 与全 App 白色设计一致 ② 即使闪一下也是白的。 */
-/* ★2026-09-25：略缩内边距 + 高度自适应，消除"能上下滑一点点"的溢出 */
 .login-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:18px 24px calc(18px + env(safe-area-inset-bottom,0px));background:var(--bg);overflow:hidden}
 .login-head{color:var(--text);text-align:center;margin-bottom:16px}
 .login-head .lg{width:52px;height:52px;margin:0 auto 9px;background:rgba(11,61,145,.08);border:1px solid rgba(11,61,145,.14);border-radius:18px;display:flex;align-items:center;justify-content:center}
@@ -333,7 +274,6 @@ a{color:var(--brand-2);text-decoration:none}
 .login-head p{margin:6px 0 0;font-size:12px;color:var(--text-2);letter-spacing:1px}
 .login-card{background:var(--card);border-radius:20px;padding:18px 16px;box-shadow:var(--shadow)}
 .field{margin-bottom:14px}
-/* 独立文本/下拉输入（空教室筛选等，不在 .field 容器里） */
 .txt-in{background:#f4f7fc;border:1.5px solid #e6eaf2;border-radius:12px;padding:12px 12px;font-size:15px;color:var(--text);outline:none;transition:border-color .18s;-webkit-appearance:none;appearance:none}
 .txt-in:focus{border-color:var(--brand-2);background:#fff}
 select.txt-in{padding:11px 8px}
@@ -350,10 +290,7 @@ select.txt-in{padding:11px 8px}
 .btn-primary:active{transform:scale(.985)}
 .btn-primary:disabled{opacity:.6}
 .btn-ghost{width:100%;padding:12px;font-size:13.5px;color:var(--brand-2);margin-top:10px}
-/* 首页校园网信息卡的「刷新」：压掉 btn-ghost 的 margin-top、推到行最右并垂直居中 */
 .net-status .btn-ghost{margin-top:0;margin-bottom:0;margin-left:auto;align-self:center}
-/* 设备行「下线」小按钮：品牌蓝、在右列内水平居中
-   ★两字按钮不加 letter-spacing：字间+尾部各多 2px → "下 线"中缝大、整体视觉偏左 */
 .kickbtn{display:block;margin:8px auto 0;padding:5px 22px;font-size:12px;font-weight:600;
   color:#fff;background:linear-gradient(135deg,#1e6fd9,#0b3d91);border:none;border-radius:999px;
   box-shadow:0 4px 10px rgba(11,61,145,.25)}
@@ -362,13 +299,11 @@ select.txt-in{padding:11px 8px}
 .login-secure{margin-top:10px;background:#f4f9f5;border:1px solid #d8ecdf;border-radius:12px;padding:9px 12px;font-size:11.5px;color:#2f6b4a;display:flex;gap:8px;align-items:flex-start}
 .login-secure svg{width:15px;height:15px;stroke:#12a150;fill:none;stroke-width:1.9;flex-shrink:0;margin-top:1px}
 
-/* ---------- 我的 ---------- */
 .profile-head{display:flex;align-items:center;gap:14px;padding:6px 2px 16px}
 .profile-head .p-ava{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#1e6fd9,#0b3d91);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600}
 .profile-head .p-name{font-size:18px;font-weight:700}
 .profile-head .p-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
 
-/* ---------- 弹层 / Toast ---------- */
 .toast{
   position:fixed;left:50%;bottom:88px;transform:translate(-50%,20px);z-index:999;
   background:rgba(20,26,36,.92);color:#fff;padding:10px 18px;border-radius:22px;font-size:13.5px;
@@ -385,7 +320,6 @@ select.txt-in{padding:11px 8px}
 .sheet-handle{width:38px;height:4px;border-radius:4px;background:#dbe2ee;margin:0 auto 16px}
 .long-press-tip{font-size:12.5px;color:var(--muted)}
 
-/* ---------- 骨架 ---------- */
 .skeleton{background:linear-gradient(90deg,#eef1f6 25%,#e4e9f2 37%,#eef1f6 63%);background-size:400% 100%;animation:sk 1.3s ease infinite;border-radius:8px}
 @keyframes sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
 .loading-row{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:13px;padding:30px 0}
@@ -399,12 +333,9 @@ select.txt-in{padding:11px 8px}
 }
 .banner svg{width:15px;height:15px;stroke:#e08600;fill:none;stroke-width:2;flex-shrink:0;margin-top:1px}
 
-/* 电费充值按钮：加载中的转圈（按钮尺寸不变，仅内容淡出 + 转圈覆盖） */
 @keyframes elecspin { to { transform: rotate(360deg); } }
 .btn-loading { position: relative; }
 .btn-loading > .btn-label { opacity: 0; }
-/* ★转圈居中用 inset:0+margin:auto（对定位上下文/怪异包含块免疫）；
-   原来 left/top:50%+负 margin 在个别 WebView 下会偏出按钮 */
 .btn-loading::after {
   content: ''; position: absolute; inset: 0; margin: auto;
   width: 16px; height: 16px;
@@ -412,8 +343,6 @@ select.txt-in{padding:11px 8px}
   border-radius: 50%; animation: elecspin .7s linear infinite;
 }
 
-/* ---------- 首页卡片自定义（2026-09-25） ---------- */
-/* 开关：纯 CSS 小 switch，点击整块即切换（data-act 绑在 .home-switch 上） */
 .home-switch{
   width:46px;height:28px;border-radius:14px;background:#d6dde9;position:relative;
   flex-shrink:0;transition:background .2s;cursor:pointer;
@@ -424,7 +353,6 @@ select.txt-in{padding:11px 8px}
 }
 .home-switch.on{background:var(--brand-2)}
 .home-switch.on::after{transform:translateX(18px)}
-/* 排序箭头按钮；.dim = 已到顶/底（仍可点，点了不动） */
 .card-arr{
   width:34px;height:34px;border-radius:10px;background:#eef1f6;color:var(--text-2);
   font-size:16px;line-height:1;flex-shrink:0;padding:0;
@@ -434,9 +362,6 @@ select.txt-in{padding:11px 8px}
 .card-arr.dim{opacity:.35}
 
 
-/* ---------- 暗色模式（html[data-theme="dark"] 驱动，JS 开关控制：
-   WebView 的 prefers-color-scheme 不可靠（各厂商默认不跟随系统），改属性驱动必生效。
-   开关在「我的 → 深色模式」，未设置时默认跟随系统 ---------- */
 :root[data-theme="dark"]{
   --bg:#0f1420;
   --card:#171e2e;
