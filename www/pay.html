@@ -5,6 +5,8 @@
 <body><div id="m">正在跳转支付页面…</div>
 <script>
 (function(){
+  
+
   var raw = null;
   try { raw = localStorage.getItem("cauc_pay_payload"); } catch (e) {}
   var m = document.getElementById("m");
@@ -13,9 +15,10 @@
   try { cfg = JSON.parse(raw); } catch (e) { m.textContent = "支付参数解析失败"; return; }
   try { localStorage.removeItem("cauc_pay_payload"); } catch (e) {}
 
-  var url = String(cfg.url || "").trim();
+  var url = String(cfg.url || "").trim();   
   var fields = cfg.fields || {};
   var names = Object.keys(fields);
+  
   if (names.length === 0) { location.href = url; return; }
   try {
     var f = document.createElement("form");

@@ -6,3 +6,4 @@ keystore.properties
 *.jks
 *.keystore
 *.p12
+android/capacitor-cordova-android-plugins/ 
