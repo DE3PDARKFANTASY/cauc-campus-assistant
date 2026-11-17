@@ -3,6 +3,8 @@
 
 
 :root{
+  
+  color-scheme:light;
   --brand:#0b3d91;
   --brand-2:#1e6fd9;
   --brand-soft:#e8f0fe;
@@ -438,6 +440,7 @@ select.txt-in{padding:11px 8px}
 
 
 :root[data-theme="dark"]{
+  color-scheme:dark;
   --bg:#0f1420;
   --card:#171e2e;
   --text:#e8ecf5;
@@ -483,3 +486,15 @@ select.txt-in{padding:11px 8px}
 [data-theme="dark"] .home-switch{background:#26304a}
 [data-theme="dark"] .home-switch::after{background:#3a4664}
 [data-theme="dark"] .banner{background:#1c2c4d !important;border-color:#2c4a86 !important;color:#b6c0d4 !important}
+
+
+
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}

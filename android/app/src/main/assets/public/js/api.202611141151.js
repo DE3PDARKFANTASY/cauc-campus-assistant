@@ -3194,6 +3194,39 @@
                 status: RealApi._examStatus(date, time)
             };
         },
+        _sortExams: function(list) {
+            if (!list || !list.sort) return list;
+            var nowMs = Date.now();
+            function ms(e, seg) {
+                return RealApi._examMs(e.date, String(e.time || "").split("-")[seg] || undefined);
+            }
+            list.sort(function(a, b) {
+                var ta = ms(a, 0), tb = ms(b, 0);
+                var ea = ms(a, 1) || ta, eb = ms(b, 1) || tb;
+                var pa = ta && ea && ea < nowMs ? 1 : 0;
+                var pb = tb && eb && eb < nowMs ? 1 : 0;
+                if (pa !== pb) return pa - pb;
+                return pa ? tb - ta : ta - tb;
+            });
+            return list;
+        },
+        _colorExams: function(list) {
+            if (!list || !list.forEach) return list;
+            var nameHex = {};
+            (RealApi._kbCache || []).forEach(function(c) {
+                if (c && c.name && c.hex && !nameHex[c.name]) nameHex[c.name] = c.hex;
+            });
+            var nx = 0;
+            list.forEach(function(e) {
+                var h = nameHex[e.course];
+                if (!h) {
+                    h = HX[nx % HX.length];
+                    nx++;
+                }
+                e.hex = h;
+            });
+            return list;
+        },
         getExams: function(force) {
             var raw = REAL_ENDPOINTS.exams;
             if (!raw) return Promise.resolve([]);
@@ -3208,34 +3241,53 @@
                 } catch (e0) {}
             }
             if (!force && RealApi._examsCache && exTtl > 0 && Date.now() - RealApi._examsCacheAt < exTtl) {
+                RealApi._sortExams(RealApi._examsCache);
+                RealApi._colorExams(RealApi._examsCache);
                 return Promise.resolve(RealApi._examsCache);
             }
             var job = RealApi._withJwglKickRetry(function() {
                 return RealApi._withFallback(function() {
                     return Promise.resolve(RealApi._jwglSession()).then(function(base) {
-                        var path = raw.replace(/^https?:\/\/[^/]+/, "");
-                        var url = base + path + "&xnm=" + CONFIG.XNM + "&xqm=" + CONFIG.XQM;
-                        return Net.request(url, {
-                            method: "GET",
-                            timeout: CONFIG.TIMEOUT
+                        var body = "xnm=" + encodeURIComponent(CONFIG.XNM) + "&xqm=" + encodeURIComponent(CONFIG.XQM) + "&ksmcdmb_id=&kch=&kc=&ksrq=&kkbm_id=" + "&page=1&rows=50&zd_fzdm=N358105-xs";
+                        return Net.request(base + "/kwgl/kscx_cxXsksxxIndex.html?doType=query", {
+                            method: "POST",
+                            timeout: CONFIG.TIMEOUT,
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            data: body
                         });
                     }).then(function(res) {
                         var t = res.text ? res.text() : "";
-                        var arr;
-                        try {
-                            arr = JSON.parse(t);
-                        } catch (e) {
-                            if (String(t).indexOf("浏览器兼容") >= 0) {
-                                RealApi._wvGatewayDownAt = Date.now();
-                                throw new Error("学校网关暂时不可用（兼容性提示页），稍后自动恢复");
-                            }
-                            RealApi._jwglAt = 0;
-                            throw new Error("WEBVPN/会话未就绪：考试接口返回非 JSON");
+                        if (String(t).indexOf("浏览器兼容") >= 0) {
+                            RealApi._wvGatewayDownAt = Date.now();
+                            throw new Error("学校网关暂时不可用（兼容性提示页），稍后自动恢复");
                         }
-                        if (!Array.isArray(arr)) return [];
-                        var mapped = arr.map(function(e) {
-                            return RealApi._mapExamItem(e);
+                        if (String(t).indexOf("系统运行异常") >= 0) {
+                            throw new Error("教务系统暂时异常（服务端报错），请稍后点「刷新」重试");
+                        }
+                        var j = null;
+                        try {
+                            j = JSON.parse(t);
+                        } catch (e) {}
+                        var arr = j && (j.items || j.rows) || null;
+                        if (!arr) {
+                            RealApi._jwglAt = 0;
+                            throw new Error("WEBVPN/会话未就绪：考试查询接口未返回数据");
+                        }
+                        var mapped = arr.map(function(it) {
+                            return RealApi._mapExamItem({
+                                kssj: it.kssj || "",
+                                kcmc: (it.kch ? it.kch + "/" : "") + (it.kcmc || ""),
+                                zwh: it.zwh == null ? "" : String(it.zwh),
+                                cdmc: it.cdmc || "",
+                                ksmc: it.ksmc || "",
+                                xqmc: it.xqmc || "",
+                                jsxm: it.jsxx || ""
+                            });
                         });
+                        RealApi._sortExams(mapped);
+                        RealApi._colorExams(mapped);
                         RealApi._examsCache = mapped;
                         RealApi._examsCacheAt = Date.now();
                         try {
@@ -4437,6 +4489,32 @@
                 });
             });
         },
+        selfFlow: function() {
+            var now = Date.now();
+            if (RealApi._selfFlowCache && now - RealApi._selfFlowAt < 3e5) {
+                return Promise.resolve(RealApi._selfFlowCache);
+            }
+            return SelfService._get("/Self/dashboard", 15e3).then(function(r) {
+                var t = r.text ? r.text() : "";
+                function num(k) {
+                    var m = new RegExp("[\"']?" + k + "[\"']?\\s*[:=]\\s*'?(-?[\\d.]+)").exec(t);
+                    return m ? parseFloat(m[1]) : null;
+                }
+                var left = num("leftFlow");
+                if (left == null) return null;
+                var dm = /userGroupDescription["']?\s*[:=]\s*['"]([^'"]*)['"]/.exec(t);
+                var f = {
+                    left: left,
+                    used: num("useFlow") || 0,
+                    desc: dm ? dm[1] : ""
+                };
+                RealApi._selfFlowCache = f;
+                RealApi._selfFlowAt = Date.now();
+                return f;
+            }).catch(function() {
+                return null;
+            });
+        },
         netRecharge: function(amount, paytype) {
             paytype = String(paytype || "1");
             var sid = localStorage.getItem("cauc_sid") || "";
@@ -5000,6 +5078,9 @@
         netInfo: function() {
             return RealApi.netInfo();
         },
+        selfFlow: function() {
+            return RealApi.selfFlow();
+        },
         netRecharge: function(amount, paytype) {
             return RealApi.netRecharge(amount, paytype);
         },
@@ -5251,7 +5332,12 @@
             var card = (Impl.getEcardBalance ? Impl.getEcardBalance() : Impl.getCard()).catch(function() {
                 return null;
             });
-            return Promise.all([ kb, self, card ]).then(function() {
+            var exams = kb.then(function(k) {
+                return k && cacheTtlMin("exams", 1440) > 0 ? Impl.getExams().catch(function() {
+                    return null;
+                }) : Promise.resolve(null);
+            });
+            return Promise.all([ kb, self, card, exams ]).then(function() {
                 try {
                     window.dispatchEvent(new Event("cauc:prewarm-done"));
                 } catch (e) {}

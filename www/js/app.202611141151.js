@@ -265,7 +265,7 @@
                 body = '<div class="banner">' + I.info + "<div>" + (fallback ? "无感登录连续失败 <b>" + fails + "</b> 次，已自动切换到<b>网页登录</b>。" : "在下方页面完成登录（含验证码）。") + "</div></div>" + '<div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff">' + '<iframe id="login-frame" src="' + API.CONFIG.LOGIN_URLS.webvpn + '" ' + 'style="width:100%;height:400px;border:0" referrerpolicy="no-referrer"></iframe>' + "</div>" + '<div class="long-press-tip" style="margin-top:8px;text-align:center">网页预览环境无法使用应用内登录页，请打包成 APK 使用</div>' + '<button class="btn-ghost" data-act="openlogin">在新窗口打开登录页</button>' + '<button class="btn-primary" data-act="login-done">我已完成登录，继续</button>' + (fallback ? '<button class="btn-ghost" data-act="loginreset">重置失败计数，回到无感登录</button>' : "");
             }
         } else {
-            body = '<div class="field">' + "<label>学号 / 账号</label>" + '<div class="inp-wrap">' + I.id + '<input id="in-sid" type="text" inputmode="numeric" placeholder="请输入学号" value="' + esc(savedSid()) + '" autocomplete="username"/></div>' + "</div>" + '<div class="field">' + "<label>密码</label>" + '<div class="inp-wrap">' + I.key + '<input id="in-pwd" type="password" placeholder="请输入统一身份认证密码" autocomplete="current-password" value="' + esc(API.getCreds && API.getCreds().pwd || "") + '"/></div>' + "</div>" + '<button class="btn-primary" id="btn-login">登 录</button>' + '<div class="login-secure">' + I.shield + "<div>密码仅用于<b>统一身份认证</b>与<b>校园网认证</b>，只存本会话、不落盘；校内/校外通道自动切换。</div>" + "</div>" + '<div class="login-note">登录后：校内自动一键认证校园网；校外自动切 WebVPN。账密只在本机保存，之后<b>不再重复询问</b>。</div>' + (token() ? '<div class="login-note" style="color:var(--warning,#b26a00)">为了校外自动登录，请再输入一次密码（只需这一次）。</div>' : "");
+            body = '<div class="field">' + "<label>学号 / 账号</label>" + '<div class="inp-wrap">' + I.id + '<input id="in-sid" type="text" inputmode="numeric" enterkeyhint="next" placeholder="请输入学号" value="' + esc(savedSid()) + '" autocomplete="username"/></div>' + "</div>" + '<div class="field">' + "<label>密码</label>" + '<div class="inp-wrap">' + I.key + '<input id="in-pwd" type="password" enterkeyhint="go" placeholder="请输入统一身份认证密码" autocomplete="current-password" value="' + esc(API.getCreds && API.getCreds().pwd || "") + '"/></div>' + "</div>" + '<button class="btn-primary" id="btn-login">登 录</button>' + '<div class="login-secure">' + I.shield + "<div>密码仅用于<b>统一身份认证</b>与<b>校园网认证</b>，只存本会话、不落盘；校内/校外通道自动切换。</div>" + "</div>" + '<div class="login-note">登录后：校内自动一键认证校园网；校外自动切 WebVPN。账密只在本机保存，之后<b>不再重复询问</b>。</div>' + (token() ? '<div class="login-note" style="color:var(--warning,#b26a00)">为了校外自动登录，请再输入一次密码（只需这一次）。</div>' : "");
         }
         $("#app").innerHTML = '<div class="login-wrap">' + '<div class="login-head">' + '<div class="lg"><svg viewBox="0 0 64 64" width="34" height="34"><path d="M32 6 L54 20 V44 L32 58 L10 44 V20 Z" fill="none" stroke="#0B3D91" stroke-width="3" stroke-linejoin="round"/><path d="M32 22 L42 28 V40 L32 46 L22 40 V28 Z" fill="#0B3D91" opacity=".92"/></svg></div>' + "<h2>航大校园</h2>" + "<p>中国民航大学 · 校园助手</p>" + "</div>" + '<div class="login-card">' + seg + body + '<button class="btn-ghost" id="btn-demo">先看看演示（免登录）</button>' + "</div>" + "</div>";
         var b = $("#btn-login");
@@ -277,14 +277,24 @@
             localStorage.setItem("cauc_sid", "23010086");
             enterApp();
         };
+        var imeBusy = function(e) {
+            return e.isComposing || e.keyCode === 229;
+        };
         var sEl = $("#in-sid");
         if (sEl) sEl.addEventListener("input", function() {
             var v = sEl.value.replace(/\D/g, "");
             if (v !== sEl.value) sEl.value = v;
         });
+        if (sEl) sEl.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !imeBusy(e)) {
+                e.preventDefault();
+                var pw = $("#in-pwd");
+                if (pw) pw.focus();
+            }
+        });
         var p = $("#in-pwd");
         if (p) p.addEventListener("keydown", function(e) {
-            if (e.key === "Enter") doLogin();
+            if (e.key === "Enter" && !imeBusy(e)) doLogin();
         });
     }
     function doLogin() {
@@ -580,6 +590,16 @@
         var oneLine = mock ? "演示数据（点「我的 → 数据源」切回真实）" : "<b>学校真实系统</b> · " + probeShort;
         return '<div class="banner" data-sig="' + esc(probe + "|" + chLabel) + '" ' + 'style="background:' + bg + ";border-color:" + bd + ";color:" + color + '">' + '<div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + oneLine + "</div>" + '<button class="btn-ghost" style="width:auto;padding:6px 12px;font-size:12px;flex:0 0 auto;align-self:center;margin-top:0" data-act="testjwgl">探测</button>' + "</div>";
     }
+    function loadHomeExams() {
+        fillBlock("h-exam", API.getExams(), function(exams) {
+            exams = exams || [];
+            return '<div class="card"><div class="section-title">即将到来的考试 <span class="more" data-act="go:exams">全部 ›</span></div>' + (exams.length ? exams.slice(0, 2).map(function(e) {
+                return examMini(e);
+            }).join("") : empty("🎉", "本学期暂无考试安排")) + "</div>";
+        }, function(e) {
+            return '<div class="card"><div class="section-title">即将到来的考试</div>' + blockErr(e) + "</div>";
+        });
+    }
     function loadHomeTodayCount() {
         var today = API.dayOfWeek(new Date);
         Promise.resolve(API.getWeekCourses(S.week)).then(function(courses) {
@@ -687,16 +707,7 @@
                 }).catch(function() {});
             }
         }
-        if (on.exam) {
-            fillBlock("h-exam", API.getExams(), function(exams) {
-                exams = exams || [];
-                return '<div class="card"><div class="section-title">即将到来的考试 <span class="more" data-act="go:exams">全部 ›</span></div>' + (exams.length ? exams.slice(0, 2).map(function(e) {
-                    return examMini(e);
-                }).join("") : empty("🎉", "本学期暂无考试安排")) + "</div>";
-            }, function(e) {
-                return '<div class="card"><div class="section-title">即将到来的考试</div>' + blockErr(e) + "</div>";
-            });
-        }
+        if (on.exam) loadHomeExams();
     }
     function homeCardsSheet() {
         var list = homeCardConf();
@@ -839,7 +850,8 @@
         return '<div class="course-row" data-act="courseslot:' + x.id + '">' + '<div class="cr-time"><div class="s">' + x.start + "-" + x.end + '</div><div class="e">' + (API.SECTIONS[x.start - 1] || {}).t + "</div></div>" + '<div class="cr-bar" style="background:' + x.hex + '"></div>' + '<div class="cr-main"><div class="cr-name">' + esc(x.name) + "</div>" + '<div class="cr-info"><span>' + esc(x.teacher) + "</span><span>" + esc(x.room) + "</span><span>" + esc(weeksText(x.weeks)) + "</span></div></div>" + "</div>";
     }
     function examMini(e) {
-        return '<div class="list-item"><div class="li-ico bg-red">' + I.exam + "</div>" + '<div class="li-main"><div class="li-t">' + esc(e.course) + '</div><div class="li-s">' + esc(e.date) + " " + esc(e.time) + " · " + esc(e.room) + "</div></div>" + '<div class="li-v" style="font-size:12px;color:var(--danger)">' + esc(e.type) + "</div></div>";
+        var wk = examWeekday(e);
+        return '<div class="list-item"><div class="li-ico bg-red">' + I.exam + "</div>" + '<div class="li-main"><div class="li-t">' + esc(e.course) + '</div><div class="li-s">' + esc(e.date) + (wk ? "（" + esc(wk) + "）" : "") + " " + esc(e.time) + " · " + esc(e.room) + "</div></div>" + '<div class="li-v" style="font-size:12px;color:var(--danger)">' + esc(e.type) + "</div></div>";
     }
     function viewSchedule(c) {
         Promise.all([ S.schedView === "week" ? API.getWeekCourses(S.week) : API.getAllCourses() ]).then(function(r) {
@@ -1079,6 +1091,27 @@
             if (el) el.innerHTML = profileUnavailable("尚未登录");
         }
     }
+    function examWeekday(e) {
+        var m = /(\d+)/.exec(String(e.weekday || ""));
+        if (m) return weekdayName(Math.min(7, Math.max(1, +m[1])));
+        var t = Date.parse(String(e.date || "").replace(/-/g, "/"));
+        if (isNaN(t)) return "";
+        var gd = new Date(t).getDay();
+        return weekdayName(gd === 0 ? 7 : gd);
+    }
+    function examCountdown(e) {
+        var t = Date.parse(String(e.date || "").replace(/-/g, "/"));
+        if (isNaN(t)) return "";
+        var d0 = new Date(t);
+        d0.setHours(0, 0, 0, 0);
+        var n0 = new Date;
+        n0.setHours(0, 0, 0, 0);
+        var diff = Math.round((d0 - n0) / 864e5);
+        if (diff > 1) return "还剩" + diff + "天";
+        if (diff === 1) return "明天开考";
+        if (diff === 0) return "今天开考";
+        return "";
+    }
     function viewExams(c, force) {
         API.getExams(!!force).then(function(list) {
             if (S.route !== "exams") return;
@@ -1090,7 +1123,9 @@
             list.forEach(function(e) {
                 var seatTx = String(e.seat == null ? "" : e.seat).trim();
                 if (seatTx && seatTx.indexOf("座") < 0 && seatTx.indexOf("号") < 0) seatTx = "座位 " + seatTx + " 号";
-                html += '<div class="exam-card"><div class="ex-row"><div class="ex-name">' + esc(e.course) + "</div>" + '<div class="ex-count">' + esc(e.status) + "</div></div>" + '<div class="ex-meta">' + (e.date ? '<div class="m">' + I.cal + esc(e.date) + "</div>" : "") + (e.time ? '<div class="m">' + I.info + esc(e.time) + "</div>" : "") + (e.room ? '<div class="m">' + I.map + esc(e.room) + "</div>" : "") + (seatTx ? '<div class="m">' + I.id + esc(seatTx) + "</div>" : "") + "</div></div>";
+                var wk = examWeekday(e);
+                var cd = e.status === "未开始" ? examCountdown(e) : "";
+                html += '<div class="exam-card" style="border-left-color:' + esc(e.hex || "") + '"><div class="ex-row"><div class="ex-name">' + esc(e.course) + "</div>" + '<div class="ex-count">' + esc(cd || e.status) + "</div></div>" + '<div class="ex-meta">' + (e.date ? '<div class="m">' + I.cal + esc(e.date) + (wk ? "（" + esc(wk) + "）" : "") + "</div>" : "") + (e.time ? '<div class="m">' + I.info + esc(e.time) + "</div>" : "") + (e.room ? '<div class="m">' + I.map + esc(e.room) + "</div>" : "") + (seatTx ? '<div class="m">' + I.id + esc(seatTx) + "</div>" : "") + "</div></div>";
             });
             c.innerHTML = '<div class="banner">' + I.info + "<div>考试信息以教务处最终公布为准，请提前 20 分钟到场并携带学生证。</div></div>" + html;
         }).catch(function(e) {
@@ -1253,8 +1288,9 @@
         });
     }
     function viewNetwork(c) {
-        c.innerHTML = '<div id="self-box"></div>' + '<div id="self-logcard"></div>' + '<div id="net-box">' + loading("正在读取网络信息…") + "</div>" + '<div id="netfee-box"></div>' + '<div class="card flat" style="padding:12px 14px"><div class="long-press-tip">' + "校园网账号切换、断线重连请到「校园网认证」页操作；" + "设备列表来自学校「用户自助服务系统」，与校园网认证是两套账号体系（同一份账密）。" + "</div></div>";
+        c.innerHTML = '<div id="self-flow"></div>' + '<div id="self-box"></div>' + '<div id="self-logcard"></div>' + '<div id="net-box">' + loading("正在读取网络信息…") + "</div>" + '<div id="netfee-box"></div>' + '<div class="card flat" style="padding:12px 14px"><div class="long-press-tip">' + "校园网账号切换、断线重连请到「校园网认证」页操作；" + "设备列表来自学校「用户自助服务系统」，与校园网认证是两套账号体系（同一份账密）。" + "</div></div>";
         renderNetPage(false);
+        renderSelfFlow();
         selfRender();
         renderLogCard();
         renderNetFee($("#netfee-box"));
@@ -1294,6 +1330,27 @@
         f.submit();
     }
     var NET_PAYTYPE = "1";
+    function renderSelfFlow() {
+        var box = document.getElementById("self-flow");
+        if (!box) return;
+        if (API.isMock()) {
+            box.innerHTML = "";
+            return;
+        }
+        box.innerHTML = loading("正在读取本月免费流量…");
+        API.selfFlow().then(function(f) {
+            var b = document.getElementById("self-flow");
+            if (!b) return;
+            if (!f) {
+                b.innerHTML = "";
+                return;
+            }
+            b.innerHTML = '<div class="card"><div class="section-title">本月免费流量</div>' + '<div class="kv"><span class="k">剩余流量</span><span class="v">' + (f.left / 1e3).toFixed(2) + " GB</span></div>" + '<div class="kv"><span class="k">已用流量</span><span class="v">' + (f.used / 1e3).toFixed(2) + " GB</span></div>" + "</div>";
+        }).catch(function() {
+            var b = document.getElementById("self-flow");
+            if (b) b.innerHTML = "";
+        });
+    }
     function renderNetFee(box) {
         if (!box || !API.netInfo) return;
         if (API.isMock()) {
@@ -3062,6 +3119,8 @@
     var tx0 = null;
     document.addEventListener("touchstart", function(e) {
         if (S.route === "schedule" && S.schedView === "week") tx0 = e.touches[0].clientX;
+    }, {
+        passive: true
     });
     document.addEventListener("touchend", function(e) {
         if (tx0 == null) return;
@@ -3075,6 +3134,8 @@
             S.week--;
             renderContent();
         }
+    }, {
+        passive: true
     });
     var LOGIN_PENDING = false;
     var BOOT_SHELL = '<div style="min-height:100vh;display:flex;align-items:center;' + 'justify-content:center;color:#8994a8;font-size:14px">正在启动…' + '<span style="margin-left:6px;opacity:.8"></span></div>';
@@ -3314,6 +3375,9 @@
                 } catch (e) {}
                 try {
                     refreshHomeDevices(false);
+                } catch (e) {}
+                try {
+                    loadHomeExams();
                 } catch (e) {}
             }
         });
